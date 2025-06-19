@@ -1,10 +1,74 @@
-'use client';
+// /app/dashboard/page.js
 
-import ProtectedRoute from '../components/ProtectedRoute';
-import { useAuth } from '../context/AuthContext';
+"use client";
+
+import { useEffect, useState } from "react";
+import ProtectedRoute from "../components/ProtectedRoute"; // Adjust path if needed
+import { useAuth } from "../context/AuthContext";
+import UserJobs from "../components/UserJobs";
+
+// A small helper component for styling the job status
+const StatusBadge = ({ status }) => {
+  const baseClasses =
+    "px-2 inline-flex text-xs leading-5 font-semibold rounded-full";
+  const statusClasses = {
+    completed: "bg-green-100 text-green-800",
+    in_progress: "bg-yellow-100 text-yellow-800",
+    failed: "bg-red-100 text-red-800",
+    default: "bg-gray-100 text-gray-800",
+  };
+  return (
+    <span
+      className={`${baseClasses} ${
+        statusClasses[status] || statusClasses.default
+      }`}
+    >
+      {status.replace("_", " ")}
+    </span>
+  );
+};
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, token, isAdmin } = useAuth(); // We need the token to make authenticated requests
+
+  // State to hold the jobs data
+  const [jobs, setJobs] = useState([]);
+  const [isLoadingJobs, setIsLoadingJobs] = useState(true);
+  const [error, setError] = useState(null);
+
+  // useEffect to fetch the jobs when the component mounts or token changes
+  useEffect(() => {
+    const fetchJobs = async () => {
+      if (!token) {
+        setIsLoadingJobs(false);
+        return; // Don't fetch if there's no token
+      }
+
+      try {
+        setIsLoadingJobs(true);
+        const response = await fetch("/api/jobs", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // Send the JWT
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch jobs. Are you logged in?");
+        }
+
+        const data = await response.json();
+        setJobs(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoadingJobs(false);
+      }
+    };
+
+    fetchJobs();
+  }, [token]); // This effect depends on the token
 
   return (
     <ProtectedRoute>
@@ -16,15 +80,25 @@ export default function DashboardPage() {
                 <h1 className="text-3xl font-bold text-gray-900 mb-6">
                   Dashboard
                 </h1>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                   <div className="bg-primary-50 overflow-hidden shadow rounded-lg">
                     <div className="p-5">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
                           <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            <svg
+                              className="w-5 h-5 text-white"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                              />
                             </svg>
                           </div>
                         </div>
@@ -47,8 +121,18 @@ export default function DashboardPage() {
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
                           <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <svg
+                              className="w-5 h-5 text-white"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
                             </svg>
                           </div>
                         </div>
@@ -71,8 +155,18 @@ export default function DashboardPage() {
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
                           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            <svg
+                              className="w-5 h-5 text-white"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                              />
                             </svg>
                           </div>
                         </div>
@@ -142,7 +236,7 @@ export default function DashboardPage() {
                                 <span className="text-green-600">✓</span>
                               </div>
                             </li>
-                            {user?.role === 'admin' && (
+                            {user?.role === "admin" && (
                               <li className="pl-3 pr-4 py-3 flex items-center justify-between text-sm">
                                 <div className="w-0 flex-1 flex items-center">
                                   <span className="ml-2 flex-1 w-0 truncate">
@@ -160,6 +254,7 @@ export default function DashboardPage() {
                     </dl>
                   </div>
                 </div>
+                {!isAdmin ? <UserJobs /> : <></>}
               </div>
             </div>
           </div>

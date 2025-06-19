@@ -136,4 +136,5 @@ dist
 .pnp.*
 
 /src/node_modules/
+/src/public
 
