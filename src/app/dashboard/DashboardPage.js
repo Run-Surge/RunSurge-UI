@@ -3,9 +3,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ProtectedRoute from "../components/ProtectedRoute"; // Adjust path if needed
+import ProtectedRoute from "../../components/ProtectedRoute"; // Adjust path if needed
 import { useAuth } from "../context/AuthContext";
-import UserJobs from "../components/UserJobs";
+import UserJobs from "../../components/UserJobs";
 
 // A small helper component for styling the job status
 const StatusBadge = ({ status }) => {

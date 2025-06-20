@@ -1,4 +1,4 @@
-import CreateJobPage from "./CreateJobPage";
+  import CreateJobPage from "./CreateJobPage";
 
 export const metadata = {
   title: "CreatJob - AuthApp",

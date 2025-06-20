@@ -1,12 +1,11 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -36,7 +35,7 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
-    await register(name, email, password);
+    await register(username, email, password);
     setLoading(false);
   };
 
@@ -71,18 +70,18 @@ export default function RegisterPage() {
           
           <div className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Full Name
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Username
               </label>
               <input
-                id="name"
-                name="name"
+                id="username"
+                name="username"
                 type="text"
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                placeholder="Enter your full name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
               />
             </div>
             

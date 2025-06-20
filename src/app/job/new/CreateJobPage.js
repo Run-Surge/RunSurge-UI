@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import ProtectedRoute from "../../components/ProtectedRoute"; // Adjust path if needed
-import { useAuth } from "../../context/AuthContext"; // 1. Import useAuth
+import ProtectedRoute from "../../../components/ProtectedRoute"; // Adjust path if needed
+import { useAuth } from "../../../app/context/AuthContext"; // 1. Import useAuth
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 

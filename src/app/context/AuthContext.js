@@ -1,9 +1,9 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { authService } from "../../lib/authService";
 
 const AuthContext = createContext();
 
@@ -17,105 +17,50 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null); // 1. ADD TOKEN STATE
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // 2. MODIFY THIS useEffect
   useEffect(() => {
-    // We'll check for an existing token first, like a real app would.
-    const tokenFromCookie = Cookies.get("token");
-
-    // This block is for development-only auto-login.
-    // In a production environment, you would remove the `else` block.
-    if (tokenFromCookie) {
-      // If a token exists, use it.
-      // For now, we'll trust the token and set a mock user.
-      // In a real app, you would call your `checkAuth()` function here.
-      const mockUser = {
-        id: "123",
-        name: "John Doe",
-        email: "john.doe@example.com",
-        role: "user", // Let's use admin to test conditional UI
-      };
-      setToken(tokenFromCookie);
-      setUser(mockUser);
-      setLoading(false);
-    } else {
-      // --- THE NEW MAGIC FOR DEVELOPMENT ---
-      // If no token, we create a fake one to simulate a logged-in state.
-      const fakeJwt =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMiLCJuYW1lIjoiSm9obiBEb2UiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE1MTYyMzkwMjJ9.D_0pB3tSg9aV1FzW-b2M_jZ-5jJ4-rJ6b_rY3bK_jZc";
-      const mockUser = {
-        id: "123",
-        name: "John Doe",
-        email: "john.doe@example.com",
-        role: "user",
-      };
-
-      // Set the state AND the cookie, just like a real login
-      setToken(fakeJwt);
-      setUser(mockUser);
-      Cookies.set("token", fakeJwt, { expires: 7 });
-
-      setLoading(false);
-    }
+    checkAuth();
   }, []);
-
-  // useEffect(() => {
-  //   checkAuth();
-  // }, []);
 
   const checkAuth = async () => {
     try {
-      const token = Cookies.get("token");
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch("/api/auth/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
+      // For HTTP-only cookies, we directly try to get user data
+      // If it fails, it means the user is not authenticated
+      const result = await authService.getCurrentUser();
+      
+      if (result.success) {
+        setUser(result.user);
+        setToken(authService.getToken()); // Placeholder token
       } else {
-        Cookies.remove("token");
+        // User is not authenticated
+        setUser(null);
+        setToken(null);
       }
     } catch (error) {
       console.error("Auth check failed:", error);
-      Cookies.remove("token");
+      setUser(null);
+      setToken(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (usernameOrEmail, password) => {
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const result = await authService.login(usernameOrEmail, password);
 
-      const data = await response.json();
-
-      if (response.ok) {
-        Cookies.set("token", data.token, { expires: 7 });
-        setUser(data.user);
-        setToken(data.token); // Add this to keep state in sync
+      if (result.success) {
+        setUser(result.user);
+        setToken(result.token);
         toast.success("Login successful!");
         router.push("/dashboard");
         return { success: true };
       } else {
-        toast.error(data.message || "Login failed");
-        return { success: false, message: data.message };
+        toast.error(result.message || "Login failed");
+        return { success: false, message: result.message };
       }
     } catch (error) {
       toast.error("Login failed");
@@ -123,25 +68,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (name, email, password) => {
+  const register = async (username, email, password) => {
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, email, password }),
-      });
+      const result = await authService.register(username, email, password);
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (result.success) {
         toast.success("Registration successful! Please login.");
         router.push("/login");
         return { success: true };
       } else {
-        toast.error(data.message || "Registration failed");
-        return { success: false, message: data.message };
+        toast.error(result.message || "Registration failed");
+        return { success: false, message: result.message };
       }
     } catch (error) {
       toast.error("Registration failed");
@@ -149,12 +86,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    Cookies.remove("token");
-    setUser(null);
-    setToken(null); // Also clear the token from state
-    toast.success("Logged out successfully");
-    router.push("/");
+  const logout = async () => {
+    try {
+      await authService.logout();
+      setUser(null);
+      setToken(null);
+      toast.success("Logged out successfully");
+      router.push("/");
+    } catch (error) {
+      // Even if logout API fails, clear local state
+      setUser(null);
+      setToken(null);
+      toast.success("Logged out successfully");
+      router.push("/");
+    }
   };
 
   const value = {

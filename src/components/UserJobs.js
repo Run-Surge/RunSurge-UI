@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../app/context/AuthContext";
 
 // The StatusBadge is only used here, so it's good to keep it in this file.
 const StatusBadge = ({ status }) => {

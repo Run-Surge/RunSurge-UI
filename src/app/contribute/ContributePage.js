@@ -2,9 +2,9 @@
 
 "use client";
 
-import ProtectedRoute from "../components/ProtectedRoute";
+import ProtectedRoute from "../../components/ProtectedRoute";
 // 1. Import your new reusable component
-import DownloadToolkitButton from "../components/DownloadToolkitButton"; // Adjust path if needed
+import DownloadToolkitButton from "../../components/DownloadToolkitButton"; // Adjust path if needed
 
 const ContributePage = () => {
   return (
