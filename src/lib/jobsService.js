@@ -123,7 +123,7 @@ export class JobsService {
    */
   async getUserJobs(params = {}) {
     try {
-      const response = await api.get('/jobs/my-jobs', params);
+      const response = await api.get(API_ENDPOINTS.USER_JOBS, params);
       return {
         success: true,
         jobs: response.jobs || response,

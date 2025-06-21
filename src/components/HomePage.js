@@ -4,7 +4,19 @@ import Link from "next/link";
 import { useAuth } from "../app/context/AuthContext";
 
 export default function HomePage() {
-  const { isAuthenticated, user, isAdmin } = useAuth();
+  const { isAuthenticated, user, isAdmin, loading } = useAuth();
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-blue-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-blue-100">
@@ -22,12 +34,12 @@ export default function HomePage() {
               <div className="animate-slide-up">
                 <div className="bg-white rounded-lg shadow-lg p-8 max-w-md mx-auto mb-8">
                   <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                    Welcome back, {user?.name}!
+                    Welcome back, {user?.name || user?.username}!
                   </h2>
                   <p className="text-gray-600 mb-6">
                     You are logged in as:{" "}
                     <span className="font-semibold text-primary-600">
-                      {user?.role}
+                      {user?.role || 'user'}
                     </span>
                   </p>
                   <Link

@@ -47,14 +47,7 @@ export class ApiService {
         // If JSON parsing fails, use the default error message
       }
 
-      // Handle specific error codes
-      if (response.status === 401) {
-        // Token expired or invalid - redirect to login
-        // No need to remove cookies since they're HTTP-only and managed by server
-        window.location.href = '/login';
-        throw new Error('Authentication required');
-      }
-
+      // Don't automatically redirect on 401 - let AuthContext handle it
       throw new Error(errorMessage);
     }
 
@@ -93,7 +86,6 @@ export class ApiService {
   async get(endpoint, params = {}) {
     const queryString = new URLSearchParams(params).toString();
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
-    
     return this.request(url, {
       method: 'GET',
     });

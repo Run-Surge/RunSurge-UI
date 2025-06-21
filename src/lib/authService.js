@@ -1,30 +1,51 @@
 import { api } from './api';
 import { API_ENDPOINTS } from './config';
-import Cookies from 'js-cookie';
 
 /**
  * Authentication service for handling auth-related API calls
  */
 export class AuthService {
+  constructor() {
+    this.currentUser = null;
+    this.authCheckPromise = null;
+  }
+
   /**
    * Login user with username/email and password
    */
   async login(usernameOrEmail, password) {
     try {
+      console.log('🔐 Attempting login with:', { usernameOrEmail });
+      
       const response = await api.post(API_ENDPOINTS.LOGIN, {
         username_or_email: usernameOrEmail,
         password,
       });
       
-      // Server sets HTTP-only cookies automatically
-      // No need to manually store tokens since they're HTTP-only
+      console.log('🔐 Login response:', response);
       
-      return {
-        success: true,
-        user: response.user || response, // User data from response
-        token: 'http-only-cookie', // Placeholder since we can't access HTTP-only cookies
-      };
+      // Backend returns: { user: {...}, message: "...", success: true }
+      // Server sets HTTP-only cookies automatically
+      if (response.success && response.user) {
+        this.currentUser = response.user;
+        console.log('✅ Login successful, user:', response.user);
+        return {
+          success: true,
+          user: response.user,
+          message: response.message,
+          token: 'http-only-cookie',
+        };
+      } else {
+        this.currentUser = null;
+        console.log('❌ Login failed - no success or user in response');
+        return {
+          success: false,
+          message: response.message || 'Login failed',
+        };
+      }
     } catch (error) {
+      this.currentUser = null;
+      console.error('🔐 Login error:', error);
       return {
         success: false,
         message: error.message || 'Login failed',
@@ -40,11 +61,32 @@ export class AuthService {
         password,
       });
 
-      return {
-        success: true,
-        message: response.message || 'Registration successful',
-      };
+      // Backend returns: { user: {...}, message: "...", success: true }
+      if (response.success) {
+        // If user is returned, they're automatically logged in
+        if (response.user) {
+          this.currentUser = response.user;
+          return {
+            success: true,
+            user: response.user,
+            message: response.message || 'Registration successful',
+          };
+        } else {
+          this.currentUser = null;
+          return {
+            success: true,
+            message: response.message || 'Registration successful',
+          };
+        }
+      } else {
+        this.currentUser = null;
+        return {
+          success: false,
+          message: response.message || 'Registration failed',
+        };
+      }
     } catch (error) {
+      this.currentUser = null;
       return {
         success: false,
         message: error.message || 'Registration failed',
@@ -53,21 +95,85 @@ export class AuthService {
   }
 
   /**
-   * Get current user data
+   * Get current user data from server
    */
   async getCurrentUser() {
     try {
+      console.log('👤 Checking current user...');
       const response = await api.get(API_ENDPOINTS.ME);
-      return {
-        success: true,
-        user: response,
-      };
+      console.log('👤 Me response:', response);
+      
+      // Backend returns: 
+      // Authenticated: { status: "authenticated", user: {...}, message: "..." }
+      // Unauthenticated: { status: "unauthenticated", user: null, message: "..." }
+      
+      if (response.status === "authenticated" && response.user) {
+        this.currentUser = response.user;
+        console.log('✅ User authenticated:', response.user);
+        return {
+          success: true,
+          user: response.user,
+          message: response.message,
+        };
+      } else {
+        this.currentUser = null;
+        console.log('❌ User not authenticated:', response.message);
+        return {
+          success: false,
+          message: response.message || 'Not authenticated',
+        };
+      }
     } catch (error) {
+      this.currentUser = null;
+      console.error('👤 getCurrentUser error:', error);
       return {
         success: false,
         message: error.message || 'Failed to get user data',
       };
     }
+  }
+
+  /**
+   * Check if user is authenticated
+   * This method tries to get current user from server
+   * Returns a Promise that resolves to boolean
+   */
+  async checkAuthentication() {
+    try {
+      // If we already have a pending auth check, return that promise
+      if (this.authCheckPromise) {
+        return await this.authCheckPromise;
+      }
+
+      // Create new auth check promise
+      this.authCheckPromise = this.getCurrentUser();
+      const result = await this.authCheckPromise;
+      
+      // Clear the promise
+      this.authCheckPromise = null;
+      
+      return result.success;
+    } catch (error) {
+      this.authCheckPromise = null;
+      this.currentUser = null;
+      return false;
+    }
+  }
+
+  /**
+   * Synchronous check if user is authenticated
+   * Returns true if we have user data cached, false otherwise
+   * For real-time check, use checkAuthentication() instead
+   */
+  isAuthenticated() {
+    return !!this.currentUser;
+  }
+
+  /**
+   * Get cached user data
+   */
+  getUser() {
+    return this.currentUser;
   }
 
   /**
@@ -81,7 +187,10 @@ export class AuthService {
       console.error('Logout API call failed:', error);
       // Continue with local logout even if API call fails
     }
-    // No need to manually remove cookies since they're HTTP-only and managed by server
+    
+    // Clear local user data
+    this.currentUser = null;
+    this.authCheckPromise = null;
   }
 
   /**
@@ -89,47 +198,21 @@ export class AuthService {
    */
   async refreshToken() {
     try {
-      const refreshToken = Cookies.get('refresh_token');
-      if (!refreshToken) {
-        throw new Error('No refresh token available');
-      }
-
-      const response = await api.post(API_ENDPOINTS.REFRESH_TOKEN, {
-        refresh_token: refreshToken,
-      });
-
-      if (response.token) {
-        Cookies.set('token', response.token, { expires: 7 });
-        
-        if (response.refresh_token) {
-          Cookies.set('refresh_token', response.refresh_token, { expires: 30 });
-        }
-      }
-
+      const response = await api.post(API_ENDPOINTS.REFRESH_TOKEN);
+      
       return {
         success: true,
         token: response.token,
       };
     } catch (error) {
-      // If refresh fails, clear all tokens
-      Cookies.remove('token');
-      Cookies.remove('refresh_token');
+      // If refresh fails, clear user data
+      this.currentUser = null;
       
       return {
         success: false,
         message: error.message || 'Token refresh failed',
       };
     }
-  }
-
-  /**
-   * Check if user is authenticated
-   * Since cookies are HTTP-only, we can't check them directly
-   * We'll rely on API calls to determine authentication status
-   */
-  isAuthenticated() {
-    // Can't check HTTP-only cookies, so we'll determine this through API calls
-    return null; // This will be determined by AuthContext through getCurrentUser()
   }
 
   /**

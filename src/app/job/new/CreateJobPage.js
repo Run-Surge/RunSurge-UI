@@ -1,28 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import ProtectedRoute from "../../../components/ProtectedRoute"; // Adjust path if needed
-import { useAuth } from "../../../app/context/AuthContext"; // 1. Import useAuth
+import ProtectedRoute from "../../../components/ProtectedRoute";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
-// A simpler, more "normal" looking file input field
+// Simple file input component
 const SimpleFileInput = ({
   id,
   label,
   acceptedFormats,
   selectedFile,
   onFileSelect,
+  required = false
 }) => {
   const fileName = selectedFile ? selectedFile.name : "No file selected";
 
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium text-gray-700">
-        {label}
+        {label} {required && <span className="text-red-500">*</span>}
       </label>
       <div className="mt-1 flex items-center">
-        {/* The clickable button */}
         <label
           htmlFor={id}
           className="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
@@ -37,109 +36,195 @@ const SimpleFileInput = ({
             onChange={(e) => onFileSelect(e.target.files[0])}
           />
         </label>
-        {/* The text showing the selected file name */}
         <span className="ml-3 text-sm text-gray-500 truncate">{fileName}</span>
       </div>
     </div>
   );
 };
 
-const CreateJobPage = () => {
-  const { token } = useAuth(); // 2. Get the token
-  const router = useRouter();
+// Tab component
+const TabButton = ({ active, onClick, children }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`px-6 py-3 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
+      active
+        ? "text-primary-600 border-primary-600 bg-primary-50"
+        : "text-gray-500 border-gray-200 hover:text-gray-700 hover:border-gray-300"
+    }`}
+  >
+    {children}
+  </button>
+);
 
+const CreateJobPage = () => {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("simple");
   const [pythonScript, setPythonScript] = useState(null);
-  const [dataFile, setDataFile] = useState(null);
+  const [jobName, setJobName] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- THIS IS THE CORRECTED SUBMISSION LOGIC ---
+  // Mock job creation - creates a job and redirects to detail page
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // Simple validation
-    if (!pythonScript || !dataFile) {
-      toast.error("Please upload both a Python script and a data file.");
+    if (!pythonScript) {
+      toast.error("Please upload a Python script file.");
+      return;
+    }
+
+    if (!jobName.trim()) {
+      toast.error("Please enter a job name.");
       return;
     }
 
     setIsSubmitting(true);
-    toast.loading("Uploading files and creating job...");
-
-    // 3. Create a FormData object
-    const formData = new FormData();
-    formData.append("pythonScript", pythonScript); // The key "pythonScript" must match what the backend expects
-    formData.append("dataFile", dataFile); // The key "dataFile" must also match
+    toast.loading("Creating job...");
 
     try {
-      // 4. Send the request with FormData
-      const response = await fetch("/api/jobs", {
-        // Assuming you use the same endpoint with POST
-        method: "POST",
-        headers: {
-          // DO NOT set 'Content-Type'. The browser sets it automatically
-          // to 'multipart/form-data' with the correct boundary.
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData, // The body is the FormData object
-      });
+      // Simulate job creation with mock data
+      const mockJobData = {
+        id: Date.now(), // Mock ID
+        name: jobName,
+        description: jobDescription,
+        script_file: pythonScript.name,
+        status: "created", // Initial status before submission
+        type: activeTab,
+        created_at: new Date().toISOString(),
+      };
 
-      const result = await response.json();
+      // Store mock job data in localStorage for demo purposes
+      const existingJobs = JSON.parse(localStorage.getItem("mockJobs") || "[]");
+      existingJobs.push(mockJobData);
+      localStorage.setItem("mockJobs", JSON.stringify(existingJobs));
+
       toast.dismiss();
-
-      if (response.ok) {
-        toast.success("Job created successfully!");
-        // Redirect to the dashboard to see the new job
-        router.push("/dashboard");
-      } else {
-        throw new Error(result.message || "Failed to create job.");
-      }
+      toast.success("Job created successfully!");
+      
+      // Redirect to job detail page
+      router.push(`/job/${mockJobData.id}`);
     } catch (error) {
       toast.dismiss();
-      toast.error(error.message);
+      toast.error("Failed to create job");
       setIsSubmitting(false);
     }
   };
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8 p-10 bg-white shadow-lg rounded-xl">
-          <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              Create a New Job
-            </h2>
-            <p className="mt-2 text-center text-sm text-gray-600">
-              Upload your script and data to start a new processing job.
-            </p>
-          </div>
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            {/* REPLACE the old file inputs */}
-            <SimpleFileInput
-              id="python-script-upload"
-              label="Python Script (.py)"
-              acceptedFormats=".py"
-              selectedFile={pythonScript}
-              onFileSelect={setPythonScript}
-            />
-
-            <SimpleFileInput
-              id="data-file-upload"
-              label="Data File (.csv)"
-              acceptedFormats=".csv"
-              selectedFile={dataFile}
-              onFileSelect={setDataFile}
-            />
-            {/* END OF REPLACEMENT */}
-            <div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-gray-400"
-              >
-                {isSubmitting ? "Submitting..." : "Submit Job"}
-              </button>
+      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white shadow-lg rounded-xl overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900">Submit New Job</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Upload your Python script to create a new processing job
+              </p>
             </div>
-          </form>
+
+            {/* Tabs */}
+            <div className="border-b border-gray-200">
+              <nav className="flex space-x-8 px-6">
+                <TabButton
+                  active={activeTab === "simple"}
+                  onClick={() => setActiveTab("simple")}
+                >
+                  Simple Job
+                </TabButton>
+                <TabButton
+                  active={activeTab === "complex"}
+                  onClick={() => setActiveTab("complex")}
+                >
+                  Complex Job
+                </TabButton>
+              </nav>
+            </div>
+
+            {/* Form Content */}
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+              {/* Job Name */}
+              <div>
+                <label htmlFor="jobName" className="block text-sm font-medium text-gray-700">
+                  Job Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="jobName"
+                  value={jobName}
+                  onChange={(e) => setJobName(e.target.value)}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Enter a name for your job"
+                  required
+                />
+              </div>
+
+              {/* Job Description */}
+              <div>
+                <label htmlFor="jobDescription" className="block text-sm font-medium text-gray-700">
+                  Description
+                </label>
+                <textarea
+                  id="jobDescription"
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  rows={3}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Describe what this job does (optional)"
+                />
+              </div>
+
+              {/* Python Script Upload */}
+              <SimpleFileInput
+                id="python-script-upload"
+                label="Python Script File"
+                acceptedFormats=".py"
+                selectedFile={pythonScript}
+                onFileSelect={setPythonScript}
+                required
+              />
+
+              {/* Tab-specific content */}
+              {activeTab === "simple" && (
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-900 mb-2">Simple Job</h4>
+                  <p className="text-sm text-blue-700">
+                    Upload a Python script that will be executed with default settings. 
+                    You can add data files after the job is created.
+                  </p>
+                </div>
+              )}
+
+              {activeTab === "complex" && (
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-purple-900 mb-2">Complex Job</h4>
+                  <p className="text-sm text-purple-700">
+                    Upload a Python script with advanced configuration options. 
+                    You can specify custom parameters and dependencies after the job is created.
+                  </p>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => router.push("/dashboard")}
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-gray-400"
+                >
+                  {isSubmitting ? "Creating..." : "Create Job"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </ProtectedRoute>

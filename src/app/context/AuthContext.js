@@ -18,7 +18,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Start as true to check auth on startup
   const router = useRouter();
 
   useEffect(() => {
@@ -27,15 +27,14 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      // For HTTP-only cookies, we directly try to get user data
-      // If it fails, it means the user is not authenticated
-      const result = await authService.getCurrentUser();
+      setLoading(true);
+      const isAuthenticated = await authService.checkAuthentication();
       
-      if (result.success) {
-        setUser(result.user);
-        setToken(authService.getToken()); // Placeholder token
+      if (isAuthenticated) {
+        const userData = authService.getUser();
+        setUser(userData);
+        setToken(authService.getToken());
       } else {
-        // User is not authenticated
         setUser(null);
         setToken(null);
       }
@@ -73,8 +72,16 @@ export const AuthProvider = ({ children }) => {
       const result = await authService.register(username, email, password);
 
       if (result.success) {
-        toast.success("Registration successful! Please login.");
-        router.push("/login");
+        // If registration returns user data, set it (user is automatically logged in)
+        if (result.user) {
+          setUser(result.user);
+          setToken(authService.getToken());
+          toast.success("Registration successful! Welcome!");
+          router.push("/dashboard");
+        } else {
+          toast.success("Registration successful! Please login.");
+          router.push("/login");
+        }
         return { success: true };
       } else {
         toast.error(result.message || "Registration failed");
@@ -105,11 +112,11 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     login,
-    token, // Provide the token
+    token,
     register,
     logout,
     loading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user, // Use local user state instead of authService method
     isAdmin: user?.role === "admin",
   };
 
