@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import ProtectedRoute from "../../components/ProtectedRoute";
+import { jobsService } from "../../lib/jobsService";
+import { useAuth } from "../context/AuthContext";
 
 // Component for styling the job status according to README requirements
 const StatusBadge = ({ status }) => {
@@ -24,80 +26,69 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-export default function DashboardPage() { 
+export default function DashboardPage() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { user, loading: authLoading, isAuthenticated, refreshAuth } = useAuth();
 
-  // Load mock jobs from localStorage
+  // Load user jobs from FastAPI backend
   useEffect(() => {
-    const loadJobs = () => {
+    const loadUserJobs = async () => {
       try {
-        let mockJobs = JSON.parse(localStorage.getItem("mockJobs") || "[]");
+        setLoading(true);
+        setError(null);
         
-        // Add demo jobs if none exist
-        if (mockJobs.length === 0) {
-          const demoJobs = [
-            {
-              id: 1,
-              name: "Data Analysis Pipeline",
-              description: "Analyzing customer behavior data",
-              script_file: "analyze_customers.py",
-              status: "complete",
-              type: "simple",
-              created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-              submitted_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-              data_files: ["customers.csv", "transactions.csv"]
-            },
-            {
-              id: 2,
-              name: "Machine Learning Model Training",
-              description: "Training a prediction model",
-              script_file: "train_model.py",
-              status: "running",
-              type: "complex",
-              created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-              submitted_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-              data_files: ["training_data.csv"]
-            },
-            {
-              id: 3,
-              name: "Report Generation",
-              description: "Generate monthly sales report",
-              script_file: "generate_report.py",
-              status: "pending",
-              type: "simple",
-              created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-              submitted_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-              data_files: ["sales_data.csv"]
-            },
-            {
-              id: 4,
-              name: "Data Validation Script",
-              description: "Validate imported data quality",
-              script_file: "validate_data.py",
-              status: "failed",
-              type: "simple",
-              created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-              submitted_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-              data_files: ["raw_data.csv"]
-            }
-          ];
+        const result = await jobsService.getUserJobs();
+        
+        if (result.success) {
+          // Transform backend response to match frontend expectations
+          const transformedJobs = result.jobs.map(job => ({
+            id: job.job_id,
+            name: job.job_name,
+            description: job.description || `${job.job_type} job`,
+            script_file: job.script_file || `${job.job_name}.py`,
+            status: job.status,
+            type: job.job_type,
+            created_at: job.created_at,
+            submitted_at: job.created_at,
+            data_files: job.data_files || []
+          }));
           
-          localStorage.setItem("mockJobs", JSON.stringify(demoJobs));
-          mockJobs = demoJobs;
+          setJobs(transformedJobs);
+        } else {
+          setError(result.message || 'Failed to load jobs');
+          console.error('Failed to load user jobs:', result.message);
         }
-        
-        setJobs(mockJobs);
       } catch (error) {
-        console.error("Failed to load jobs:", error);
-        setJobs([]);
+        // Handle 401 errors specifically
+        if (error.message && error.message.includes('401')) {
+          console.error('Authentication error - refreshing auth state');
+          setError('Session expired. Please login again.');
+          // Refresh authentication state
+          await refreshAuth();
+        } else {
+          setError('Failed to load jobs. Please try again.');
+          console.error("Failed to load jobs:", error);
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    loadJobs();
-  }, []);
+    // Only load jobs if:
+    // 1. Authentication is not loading
+    // 2. User is authenticated 
+    // 3. User data exists
+    if (!authLoading && isAuthenticated && user) {
+      loadUserJobs();
+    } else if (!authLoading && !isAuthenticated) {
+      // If not authenticated and auth loading is complete, clear jobs and show appropriate state
+      setJobs([]);
+      setLoading(false);
+      setError(null);
+    }
+  }, [user, authLoading, isAuthenticated, refreshAuth]);
 
   // Calculate stats
   const totalJobs = jobs.length;
@@ -177,7 +168,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Jobs Section */}
                 <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
                   <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
@@ -199,10 +190,35 @@ export default function DashboardPage() {
                   </div>
                   
                   <div className="border-t border-gray-200">
-                    {loading ? (
+                    {loading || authLoading ? (
                       <div className="flex justify-center items-center py-12">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                         <span className="ml-3 text-gray-600">Loading your jobs...</span>
+                      </div>
+                    ) : error ? (
+                      <div className="text-center py-12">
+                        <svg className="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h3 className="mt-2 text-sm font-medium text-gray-900">Error loading jobs</h3>
+                        <p className="mt-1 text-sm text-gray-500">{error}</p>
+                        <div className="mt-6">
+                          {error.includes('Session expired') ? (
+                            <Link
+                              href="/login"
+                              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+                            >
+                              Login Again
+                            </Link>
+                          ) : (
+                            <button
+                              onClick={() => window.location.reload()}
+                              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+                            >
+                              Try Again
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ) : jobs.length === 0 ? (
                       <div className="text-center py-12">

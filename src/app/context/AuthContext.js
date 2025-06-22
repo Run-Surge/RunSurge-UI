@@ -28,13 +28,17 @@ export const AuthProvider = ({ children }) => {
   const checkAuth = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Checking authentication status...');
+      
       const isAuthenticated = await authService.checkAuthentication();
       
       if (isAuthenticated) {
         const userData = authService.getUser();
+        console.log('✅ Authentication successful, user:', userData);
         setUser(userData);
         setToken(authService.getToken());
       } else {
+        console.log('❌ Authentication failed or expired');
         setUser(null);
         setToken(null);
       }
@@ -44,6 +48,7 @@ export const AuthProvider = ({ children }) => {
       setToken(null);
     } finally {
       setLoading(false);
+      console.log('🔍 Authentication check complete');
     }
   };
 
@@ -118,6 +123,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     isAuthenticated: !!user, // Use local user state instead of authService method
     isAdmin: user?.role === "admin",
+    refreshAuth: checkAuth, // Add method to refresh authentication
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

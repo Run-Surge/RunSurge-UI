@@ -132,3 +132,76 @@ def get_current_user(current_user: User = Depends(get_current_user_optional)):
     }
 
 
+Refactor the Home page (index) to be a modern Home page for parllel work distrubuited platform called
+RunSurge, provide a navbar that has about us page. and Login and Register. in The Home page should be a button with a description of share your resources and start earning, this to a page that has some rules 
+
+Implement the API request to get the user Jobs when the user login into his dashboard
+The request on the backend at the following endpoint api/users/Jobs
+Here is the response type
+{
+    "jobs": [
+        {
+            "job_id": 1,
+            "status": "pending",
+            "created_at": "2025-06-22T20:01:51.272456",
+            "job_name": "test",
+            "job_type": "simple"
+        },
+        {
+            "job_id": 2,
+            "status": "pending",
+            "created_at": "2025-06-22T20:03:17.574214",
+            "job_name": "test",
+            "job_type": "simple"
+        },
+        {
+            "job_id": 3,
+            "status": "pending",
+            "created_at": "2025-06-22T20:04:28.200895",
+            "job_name": "test",
+            "job_type": "simple"
+        },
+        {
+            "job_id": 4,
+            "status": "pending",
+            "created_at": "2025-06-22T20:05:21.157550",
+            "job_name": "test",
+            "job_type": "simple"
+        },
+        {
+            "job_id": 5,
+            "status": "pending",
+            "created_at": "2025-06-22T20:07:20.829249",
+            "job_name": "test",
+            "job_type": "simple"
+        }
+    ],
+    "message": "Jobs fetched successfully",
+    "success": true
+}
+
+and here is the route 
+@router.get("/jobs")
+async def get_user_jobs(
+    current_user: User = Depends(get_current_user_optional),
+    session: AsyncSession = Depends(get_db)
+):
+    """Get all jobs submitted by the current user."""
+    print("current_user",current_user)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    job_service = get_job_service(session)
+    jobs = await job_service.get_user_jobs(current_user["user_id"])
+    return {
+        "jobs": [JobRead(
+            job_id=job.job_id,
+            job_name=job.job_name,
+            job_type=job.job_type,
+            status=job.status,
+            created_at=job.created_at,
+            user_id=current_user["user_id"]
+        ) for job in jobs],
+        "message": "Jobs fetched successfully",
+        "success": True
+    }
