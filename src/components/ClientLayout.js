@@ -44,7 +44,7 @@ const ClientLayout = ({ children }) => {
               </Link>
             </div>
             <div className="flex items-center space-x-4">
-              {isAuthenticated ? (
+              {isAuthenticated && (
                 <>
                   <Link
                     href="/dashboard"
@@ -56,18 +56,6 @@ const ClientLayout = ({ children }) => {
                   >
                     Dashboard
                   </Link>
-                  {user?.role === "admin" && (
-                    <Link
-                      href="/admin"
-                      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        pathname === "/admin"
-                          ? "bg-primary-100 text-primary-700"
-                          : "text-gray-700 hover:text-primary-600 hover:bg-gray-100"
-                      }`}
-                    >
-                      Admin
-                    </Link>
-                  )}
                   <div className="flex items-center space-x-3">
                     <span className="text-sm text-gray-700">
                       Welcome, {user?.name}
@@ -80,7 +68,8 @@ const ClientLayout = ({ children }) => {
                     </button>
                   </div>
                 </>
-              ) : (
+              )}
+              {!isAuthenticated && (
                 <div className="flex items-center space-x-3">
                   <Link
                     href="/login"
@@ -94,7 +83,6 @@ const ClientLayout = ({ children }) => {
                   >
                     Register
                   </Link>
-                  <DownloadToolkitButton className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors" />
                 </div>
               )}
             </div>
