@@ -44,14 +44,21 @@ export class JobsService {
   }
 
   /**
-   * Create a new job
+   * Create a new job with file upload (multipart/form-data)
    */
-  async createJob(jobData) {
+  async createJob(jobName, jobType, file) {
     try {
-      const response = await api.post(API_ENDPOINTS.JOB_CREATE, jobData);
+      // Create FormData for multipart/form-data request
+      const formData = new FormData();
+      formData.append('job_name', jobName);
+      formData.append('job_type', jobType);
+      formData.append('file', file);
+
+      const response = await api.uploadFile(API_ENDPOINTS.JOB_CREATE, formData);
       return {
         success: true,
         job: response,
+        job_id: response.job_id,
         message: 'Job created successfully',
       };
     } catch (error) {

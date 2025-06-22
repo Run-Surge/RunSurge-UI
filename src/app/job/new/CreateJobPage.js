@@ -4,6 +4,7 @@ import { useState } from "react";
 import ProtectedRoute from "../../../components/ProtectedRoute";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { jobsService } from "../../../lib/jobsService";
 
 // Simple file input component
 const SimpleFileInput = ({
@@ -62,10 +63,9 @@ const CreateJobPage = () => {
   const [activeTab, setActiveTab] = useState("simple");
   const [pythonScript, setPythonScript] = useState(null);
   const [jobName, setJobName] = useState("");
-  const [jobDescription, setJobDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Mock job creation - creates a job and redirects to detail page
+  // Real job creation - integrates with backend API
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -83,30 +83,28 @@ const CreateJobPage = () => {
     toast.loading("Creating job...");
 
     try {
-      // Simulate job creation with mock data
-      const mockJobData = {
-        id: Date.now(), // Mock ID
-        name: jobName,
-        description: jobDescription,
-        script_file: pythonScript.name,
-        status: "created", // Initial status before submission
-        type: activeTab,
-        created_at: new Date().toISOString(),
-      };
-
-      // Store mock job data in localStorage for demo purposes
-      const existingJobs = JSON.parse(localStorage.getItem("mockJobs") || "[]");
-      existingJobs.push(mockJobData);
-      localStorage.setItem("mockJobs", JSON.stringify(existingJobs));
+      // Call backend API to create job with multipart/form-data
+      const result = await jobsService.createJob(
+        jobName.trim(),
+        activeTab, // job_type (simple or complex)
+        pythonScript // file
+      );
 
       toast.dismiss();
-      toast.success("Job created successfully!");
-      
-      // Redirect to job detail page
-      router.push(`/job/${mockJobData.id}`);
+
+      if (result.success) {
+        toast.success("Job created successfully!");
+        
+        // Redirect to job detail page using job_id from response
+        router.push(`/job/${result.job_id}`);
+      } else {
+        toast.error(result.message || "Failed to create job");
+        setIsSubmitting(false);
+      }
     } catch (error) {
       toast.dismiss();
-      toast.error("Failed to create job");
+      toast.error("Failed to create job. Please try again.");
+      console.error("Job creation error:", error);
       setIsSubmitting(false);
     }
   };
@@ -157,21 +155,6 @@ const CreateJobPage = () => {
                   className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
                   placeholder="Enter a name for your job"
                   required
-                />
-              </div>
-
-              {/* Job Description */}
-              <div>
-                <label htmlFor="jobDescription" className="block text-sm font-medium text-gray-700">
-                  Description
-                </label>
-                <textarea
-                  id="jobDescription"
-                  value={jobDescription}
-                  onChange={(e) => setJobDescription(e.target.value)}
-                  rows={3}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Describe what this job does (optional)"
                 />
               </div>
 

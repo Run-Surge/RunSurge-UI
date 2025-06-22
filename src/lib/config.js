@@ -14,7 +14,7 @@ export const API_ENDPOINTS = {
   
   // Job endpoints (FastAPI backend)
   JOBS: '/api/jobs',
-  JOB_CREATE: '/api/jobs',
+  JOB_CREATE: '/api/job/',
   JOB_DETAIL: (id) => `/api/jobs/${id}`,
   JOB_UPDATE: (id) => `/api/jobs/${id}`,
   JOB_DELETE: (id) => `/api/jobs/${id}`,
