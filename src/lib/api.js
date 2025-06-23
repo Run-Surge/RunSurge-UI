@@ -134,16 +134,14 @@ export class ApiService {
    * Upload file (multipart/form-data)
    */
   async uploadFile(endpoint, formData) {
-    // For HTTP-only cookies, no need to manually set Authorization header
     const headers = {
-      // Don't set Content-Type for FormData, let the browser set it
     };
 
     return this.request(endpoint, {
       method: 'POST',
       headers,
       body: formData,
-      credentials: 'include', // Include cookies
+      credentials: 'include',
     });
   }
 }

@@ -4,9 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "../../../components/ProtectedRoute";
 import toast from "react-hot-toast";
+import { jobsService } from "../../../lib/jobsService";
+
+const CHUNK_SIZE = 100 * 1024 * 1024; // 100MB
 
 // File upload component
-const FileUploadArea = ({ onFilesSelect, uploadedFiles }) => {
+const FileUploadArea = ({ onFileSelect, selectedFile, acceptedFormats = ".csv" }) => {
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleDragOver = (e) => {
@@ -22,13 +25,17 @@ const FileUploadArea = ({ onFilesSelect, uploadedFiles }) => {
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragOver(false);
-    const files = Array.from(e.dataTransfer.files);
-    onFilesSelect(files);
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      onFileSelect(file);
+    }
   };
 
   const handleFileSelect = (e) => {
-    const files = Array.from(e.target.files);
-    onFilesSelect(files);
+    const file = e.target.files[0];
+    if (file) {
+      onFileSelect(file);
+    }
   };
 
   return (
@@ -68,59 +75,49 @@ const FileUploadArea = ({ onFilesSelect, uploadedFiles }) => {
                 name="file-upload"
                 type="file"
                 className="sr-only"
-                multiple
+                accept={acceptedFormats}
                 onChange={handleFileSelect}
               />
             </label>
           </div>
           <p className="text-xs text-gray-500">
-            CSV, JSON, TXT files up to 10MB each
+            CSV files up to 1GB (will be uploaded in chunks)
           </p>
         </div>
       </div>
 
-      {/* Uploaded Files List */}
-      {uploadedFiles.length > 0 && (
+      {/* Selected File */}
+      {selectedFile && (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-900">Uploaded Files:</h4>
-          <div className="space-y-1">
-            {uploadedFiles.map((file, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md"
+          <h4 className="text-sm font-medium text-gray-900">Selected File:</h4>
+          <div className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md">
+            <div className="flex items-center">
+              <svg
+                className="h-5 w-5 text-gray-400 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                <div className="flex items-center">
-                  <svg
-                    className="h-5 w-5 text-gray-400 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <span className="text-sm text-gray-900">{file.name}</span>
-                  <span className="text-xs text-gray-500 ml-2">
-                    ({Math.round(file.size / 1024)}KB)
-                  </span>
-                </div>
-                <button
-                  onClick={() => {
-                    const newFiles = uploadedFiles.filter((_, i) => i !== index);
-                    onFilesSelect(newFiles);
-                  }}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ))}
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              <span className="text-sm text-gray-900">{selectedFile.name}</span>
+              <span className="text-xs text-gray-500 ml-2">
+                ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
+              </span>
+            </div>
+            <button
+              onClick={() => onFileSelect(null)}
+              className="text-red-500 hover:text-red-700"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
       )}
@@ -135,8 +132,10 @@ const StatusBadge = ({ status }) => {
     created: "bg-gray-100 text-gray-800",
     pending: "bg-yellow-100 text-yellow-800",
     running: "bg-blue-100 text-blue-800",
+    success: "bg-green-100 text-green-800",
     complete: "bg-green-100 text-green-800",
     failed: "bg-red-100 text-red-800",
+    submitted: "bg-purple-100 text-purple-800",
   };
   
   const normalizedStatus = status?.toLowerCase() || 'created';
@@ -148,24 +147,38 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+// Progress bar component
+const ProgressBar = ({ progress }) => {
+  return (
+    <div className="w-full bg-gray-200 rounded-full h-2.5">
+      <div 
+        className="bg-primary-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" 
+        style={{ width: `${progress}%` }}
+      ></div>
+    </div>
+  );
+};
+
 export default function JobDetailPage({ params }) {
   const router = useRouter();
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [currentChunk, setCurrentChunk] = useState(0);
+  const [totalChunks, setTotalChunks] = useState(0);
 
+  // Fetch job details from API
   useEffect(() => {
-    // Load job data from localStorage (mock data)
-    const loadJob = () => {
+    const fetchJobDetails = async () => {
       try {
-        const mockJobs = JSON.parse(localStorage.getItem("mockJobs") || "[]");
-        const foundJob = mockJobs.find(j => j.id.toString() === params.id);
+        const result = await jobsService.getJob(params.id);
         
-        if (foundJob) {
-          setJob(foundJob);
+        if (result.success) {
+          setJob(result.job);
         } else {
-          toast.error("Job not found");
+          toast.error(result.message || "Failed to load job");
           router.push("/dashboard");
         }
       } catch (error) {
@@ -176,44 +189,104 @@ export default function JobDetailPage({ params }) {
       }
     };
 
-    loadJob();
+    fetchJobDetails();
   }, [params.id, router]);
 
-  const handleFilesSelect = (files) => {
-    setUploadedFiles(files);
+  // Handle file selection
+  const handleFileSelect = (file) => {
+    setSelectedFile(file);
+    if (file) {
+      const chunks = Math.ceil(file.size / CHUNK_SIZE);
+      setTotalChunks(chunks);
+      setCurrentChunk(0);
+      setUploadProgress(0);
+    }
   };
 
-  const handleSubmitJob = async () => {
-    if (!job) return;
+  // Upload a single chunk
+  const uploadChunk = async (chunk, chunkIndex, totalChunks, jobId) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', chunk);
+      formData.append('chunk_index', chunkIndex);
+      formData.append('total_chunks', totalChunks);
+      
+      const result = await jobsService.uploadDataFile(jobId, formData);
+      
+      if (result.success) {
+        return true;
+      } else {
+        console.error(`❌ Error uploading chunk ${chunkIndex + 1}/${totalChunks}:`, result.message);
+        return false;
+      }
+    } catch (error) {
+      console.error(`❌ Error uploading chunk ${chunkIndex + 1}/${totalChunks}:`, error);
+      return false;
+    }
+  };
 
-    setIsSubmitting(true);
-    toast.loading("Submitting job...");
+  // Handle data file upload with chunking
+  const handleUploadDataFile = async () => {
+    if (!selectedFile || !job) return;
+
+    setIsUploading(true);
+    toast.loading(`Preparing to upload file in ${totalChunks} chunks...`);
 
     try {
-      // Update job status to PENDING
-      const mockJobs = JSON.parse(localStorage.getItem("mockJobs") || "[]");
-      const updatedJobs = mockJobs.map(j => 
-        j.id === job.id 
-          ? { ...j, status: "pending", data_files: uploadedFiles.map(f => f.name), submitted_at: new Date().toISOString() }
-          : j
-      );
-      localStorage.setItem("mockJobs", JSON.stringify(updatedJobs));
+      // Calculate total chunks
+      const totalChunks = Math.ceil(selectedFile.size / CHUNK_SIZE);
+      let uploadedChunks = 0;
 
-      // Update local state
-      setJob(prev => ({ 
-        ...prev, 
-        status: "pending", 
-        data_files: uploadedFiles.map(f => f.name),
-        submitted_at: new Date().toISOString()
-      }));
+      // Upload each chunk sequentially
+      for (let i = 0; i < totalChunks; i++) {
+        setCurrentChunk(i + 1);
+        
+        // Update toast message for each chunk
+        toast.dismiss();
+        toast.loading(`Uploading chunk ${i + 1} of ${totalChunks}...`);
+        
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(selectedFile.size, start + CHUNK_SIZE);
+        const chunk = selectedFile.slice(start, end);
+        
+        // Create a blob with the chunk data
+        const chunkBlob = new Blob([chunk], { type: selectedFile.type });
+        
+        // Create a File object from the blob (to maintain filename)
+        const chunkFile = new File([chunkBlob], selectedFile.name, { 
+          type: selectedFile.type,
+          lastModified: selectedFile.lastModified
+        });
+
+        // Upload the chunk
+        const success = await uploadChunk(chunkFile, i, totalChunks, job.job_id);
+
+        if (!success) {
+          toast.dismiss();
+          toast.error(`Upload failed at chunk ${i + 1}/${totalChunks}. Please try again.`);
+          setIsUploading(false);
+          return;
+        }
+
+        uploadedChunks++;
+        const progress = Math.round((uploadedChunks / totalChunks) * 100);
+        setUploadProgress(progress);
+      }
 
       toast.dismiss();
-      toast.success("Job submitted successfully!");
+      toast.success("File uploaded successfully! Job is being scheduled for processing.");
+      setSelectedFile(null);
+      setUploadProgress(0);
+      setCurrentChunk(0);
+      setTotalChunks(0);
+      router.push("/dashboard");
+
+
     } catch (error) {
       toast.dismiss();
-      toast.error("Failed to submit job");
+      toast.error("Failed to upload file: " + (error.message || "Unknown error"));
     } finally {
-      setIsSubmitting(false);
+      setIsUploading(false);
     }
   };
 
@@ -249,8 +322,8 @@ export default function JobDetailPage({ params }) {
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{job.name}</h1>
-                  <p className="mt-1 text-sm text-gray-600">Job ID: {job.id}</p>
+                  <h1 className="text-2xl font-bold text-gray-900">{job.job_name}</h1>
+                  <p className="mt-1 text-sm text-gray-600">Job ID: {job.job_id}</p>
                 </div>
                 <StatusBadge status={job.status} />
               </div>
@@ -261,7 +334,7 @@ export default function JobDetailPage({ params }) {
               <dl className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Type</dt>
-                  <dd className="mt-1 text-sm text-gray-900 capitalize">{job.type} Job</dd>
+                  <dd className="mt-1 text-sm text-gray-900 capitalize">{job.job_type} Job</dd>
                 </div>
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Created</dt>
@@ -271,71 +344,106 @@ export default function JobDetailPage({ params }) {
                 </div>
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Script File</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{job.script_file}</dd>
+                  <dd className="mt-1 text-sm text-gray-900">{job.script_name}</dd>
                 </div>
-                {job.submitted_at && (
+                {job.input_file_name && (
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Submitted</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      {new Date(job.submitted_at).toLocaleString()}
-                    </dd>
-                  </div>
-                )}
-                {job.description && (
-                  <div className="sm:col-span-2">
-                    <dt className="text-sm font-medium text-gray-500">Description</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{job.description}</dd>
+                    <dt className="text-sm font-medium text-gray-500">Input File</dt>
+                    <dd className="mt-1 text-sm text-gray-900">{job.input_file_name}</dd>
                   </div>
                 )}
               </dl>
             </div>
           </div>
 
-          {/* Data Files Section */}
-          {job.status === "created" && (
+          {/* Data Files Section - Only show for simple jobs */}
+          {job.status === "submitted" && (
             <div className="bg-white shadow rounded-lg mb-6">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-900">Upload Data Files</h2>
+                <h2 className="text-lg font-medium text-gray-900">Upload Data File</h2>
                 <p className="mt-1 text-sm text-gray-600">
-                  Upload any data files that your script needs to process
+                  Upload a CSV file that your script needs to process. Large files will be uploaded in chunks.
                 </p>
               </div>
               <div className="px-6 py-4">
                 <FileUploadArea 
-                  onFilesSelect={handleFilesSelect}
-                  uploadedFiles={uploadedFiles}
+                  onFileSelect={handleFileSelect}
+                  selectedFile={selectedFile}
+                  acceptedFormats=".csv"
                 />
+                
+                {selectedFile && (
+                  <div className="mt-4">
+                    {isUploading && (
+                      <div className="mb-4">
+                        <div className="flex justify-between text-sm text-gray-700 mb-1">
+                          <span>Uploading chunk {currentChunk} of {totalChunks}</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <ProgressBar progress={uploadProgress} />
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleUploadDataFile}
+                        disabled={isUploading}
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-gray-400"
+                      >
+                        {isUploading ? `Uploading... (${uploadProgress}%)` : "Upload File"}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
-
-          {/* Data Files Display (for submitted jobs) */}
-          {job.data_files && job.data_files.length > 0 && (
+          
+          {/* Job Status and Input File Display - Show for jobs with status other than submitted */}
+          {job.status !== "submitted" && job.input_file_name && (
             <div className="bg-white shadow rounded-lg mb-6">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-900">Data Files</h2>
+                <h2 className="text-lg font-medium text-gray-900">Job Data</h2>
               </div>
               <div className="px-6 py-4">
-                <div className="space-y-2">
-                  {job.data_files.map((filename, index) => (
-                    <div key={index} className="flex items-center bg-gray-50 px-3 py-2 rounded-md">
-                      <svg
-                        className="h-5 w-5 text-gray-400 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
-                      </svg>
-                      <span className="text-sm text-gray-900">{filename}</span>
-                    </div>
-                  ))}
+                <div className="flex items-center space-x-2">
+                  <svg
+                    className="h-5 w-5 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <span className="text-sm font-medium text-gray-900">Input File:</span>
+                  <span className="text-sm text-gray-700">{job.input_file_name}</span>
                 </div>
+                
+                {job.status === "running" && (
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-700">Your job is currently running. Check back later for results.</p>
+                    <div className="mt-2 w-full bg-gray-200 rounded-full h-2.5">
+                      <div className="bg-blue-600 h-2.5 rounded-full animate-pulse w-3/4"></div>
+                    </div>
+                  </div>
+                )}
+                
+                {job.status === "complete" && (
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-700">Your job has completed successfully!</p>
+                  </div>
+                )}
+                
+                {job.status === "failed" && (
+                  <div className="mt-4">
+                    <p className="text-sm text-red-700">Your job failed to complete. Please check the logs or try again.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -348,16 +456,6 @@ export default function JobDetailPage({ params }) {
             >
               Back to Dashboard
             </button>
-
-            {job.status === "created" && (
-              <button
-                onClick={handleSubmitJob}
-                disabled={isSubmitting}
-                className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400"
-              >
-                {isSubmitting ? "Submitting..." : "Submit Job"}
-              </button>
-            )}
           </div>
         </div>
       </div>

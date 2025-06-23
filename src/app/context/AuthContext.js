@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
       console.log('🔍 Checking authentication status...');
       
       const isAuthenticated = await authService.checkAuthentication();
-      
+
       if (isAuthenticated) {
         const userData = authService.getUser();
         console.log('✅ Authentication successful, user:', userData);
@@ -84,8 +84,8 @@ export const AuthProvider = ({ children }) => {
           toast.success("Registration successful! Welcome!");
           router.push("/dashboard");
         } else {
-          toast.success("Registration successful! Please login.");
-          router.push("/login");
+        toast.success("Registration successful! Please login.");
+        router.push("/login");
         }
         return { success: true };
       } else {
@@ -107,10 +107,10 @@ export const AuthProvider = ({ children }) => {
       router.push("/");
     } catch (error) {
       // Even if logout API fails, clear local state
-      setUser(null);
+    setUser(null);
       setToken(null);
-      toast.success("Logged out successfully");
-      router.push("/");
+    toast.success("Logged out successfully");
+    router.push("/");
     }
   };
 

@@ -1,48 +1,123 @@
-🎯 Objective
-Refactor the job creation flow to integrate with the backend API provided by a Python FastAPI server. Upon creating a new job, you should redirect the user to the following route:
+🚀 Chunked File Upload Integration (100MB Streaming)
+🧩 Objective
+Implement large CSV file upload functionality in the frontend that streams the data to the backend in 100MB chunks.
 
-bash
-Copy
-Edit
-/job/{job_id}
-This is necessary to continue with the data upload phase for that specific job.
+✅ Target: Reliable chunked upload flow with backend coordination and post-upload job execution trigger.
 
-⚙️ Backend Endpoint Specification
-Endpoint:
+🌐 Backend API: Upload Endpoint
+POST /{job_id}/upload-data
+This endpoint:
 
-bash
-Copy
-Edit
-POST /api/job/
-Request Type: multipart/form-data
+Authenticates the user.
 
-Parameters:
+Validates and stores each data chunk sequentially.
 
-Name	Type	Required	Description
-job_name	string	✅	The name of the job
-job_type	enum	✅	Type of the job (e.g., from a predefined enum JobType)
-file	UploadFile	✅	Python script to be executed
+Triggers the job execution only after the last chunk is uploaded.
 
-Authentication:
-The user must be authenticated. The session is expected to be validated via cookies (sent automatically by browser).
+📥 Request Parameters
+Sent via multipart/form-data:
 
-Successful Response:
+Field	Type	Description
+file	File	The file chunk
+chunk_index	Form (int)	Index of the current chunk (0-based)
+total_chunks	Form (int)	Total number of chunks to be sent
+
+✅ Success Responses
+Partial Upload:
 
 json
 Copy
 Edit
 {
-  "job_id": 123,
-  "job_name": "example",
-  "status": "pending",
-  "created_at": "2025-06-22T20:01:51.272456",
-  ...
+  "message": "Data chunk uploaded successfully",
+  "data_chunk_index": 2,
+  "job_id": 123
 }
-🧠 Task Requirements
-✅ Keep the current UI unchanged.
+Final Chunk Upload:
 
-✅ Collect form data (including the Python script) and send it via a POST request to the above endpoint using FormData.
+json
+Copy
+Edit
+{
+  "message": "Data uploaded successfully and job started",
+  "data_chunk_index": 4,
+  "job_id": 123
+}
+📦 Frontend Integration
+🔧 Constants
+js
+Copy
+Edit
+const CHUNK_SIZE = 100 * 1024 * 1024; // 100MB global chunk size
+🧠 Upload Flow
+User selects a CSV file.
 
-✅ After receiving the response, extract job_id and navigate to /job/{job_id}.
+File is split into 100MB chunks.
 
-✅ Handle any errors (e.g., backend 500s) gracefully and display a message if needed.
+Each chunk is sent with its chunkIndex and totalChunks.
+
+If all chunks are uploaded successfully, backend starts the job.
+
+🛠️ Upload Handlers
+js
+Copy
+Edit
+// Here are sample implmentation for motivation and intuation ( use the same technique) 
+but provide neccessary modifications to run on the existing codebase
+ const uploadChunk = async (chunk, chunkIndex, totalChunks, jobId) => {
+    const formData = new FormData();
+    formData.append('file', chunk);
+    formData.append('chunkIndex', chunkIndex);
+    formData.append('totalChunks', totalChunks);
+
+    try {
+        const response = await fetch(`/api/job/${jobId}/upload-data`, {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log(`✅ Chunk ${chunkIndex} uploaded`, data);
+        return true;
+    } catch (error) {
+        console.error(`❌ Error uploading chunk ${chunkIndex}:`, error);
+        return false;
+    }
+};
+js
+Copy
+Edit
+// Main handler for initiating the upload
+const handleUpload = async () => {
+    if (!file || !jobId) {
+        alert('Select a file and ensure a job ID is available.');
+        return;
+    }
+
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    let uploadedChunks = 0;
+
+    for (let i = 0; i < totalChunks; i++) {
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(file.size, start + CHUNK_SIZE);
+        const chunk = file.slice(start, end);
+
+        const success = await uploadChunk(chunk, i, totalChunks, jobId);
+
+        if (!success) {
+            alert(`Upload failed at chunk ${i}. Aborting.`);
+            return;
+        }
+
+        uploadedChunks++;
+        const progress = ((uploadedChunks / totalChunks) * 100).toFixed(2);
+        console.log(`📦 Upload progress: ${progress}%`);
+    }
+
+    alert('🎉 Upload completed and job has started.');
+};

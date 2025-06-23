@@ -124,6 +124,28 @@ export class JobsService {
       };
     }
   }
+  
+  /**
+   * Upload data file for a specific job
+   */
+  async uploadDataFile(jobId, formData) {
+    try {
+      const response = await api.uploadFile(API_ENDPOINTS.JOB_UPLOAD_DATA(jobId), formData);
+      
+      // Return the backend response format with our success flag
+      return {
+        success: true,
+        message: response.message || 'Data file uploaded successfully',
+        data_chunk_index: response.data_chunk_index,
+        job_id: response.job_id,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to upload data file',
+      };
+    }
+  }
 
   /**
    * Get user's jobs
