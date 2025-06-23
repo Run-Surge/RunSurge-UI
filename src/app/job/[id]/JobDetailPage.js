@@ -216,7 +216,6 @@ export default function JobDetailPage({ params }) {
       if (result.success) {
         return true;
       } else {
-        console.error(`❌ Error uploading chunk ${chunkIndex + 1}/${totalChunks}:`, result.message);
         return false;
       }
     } catch (error) {
@@ -230,8 +229,6 @@ export default function JobDetailPage({ params }) {
     if (!selectedFile || !job) return;
 
     setIsUploading(true);
-    toast.loading(`Preparing to upload file in ${totalChunks} chunks...`);
-
     try {
       // Calculate total chunks
       const totalChunks = Math.ceil(selectedFile.size / CHUNK_SIZE);
@@ -242,9 +239,7 @@ export default function JobDetailPage({ params }) {
         setCurrentChunk(i + 1);
         
         // Update toast message for each chunk
-        toast.dismiss();
-        toast.loading(`Uploading chunk ${i + 1} of ${totalChunks}...`);
-        
+        toast.dismiss();        
         const start = i * CHUNK_SIZE;
         const end = Math.min(selectedFile.size, start + CHUNK_SIZE);
         const chunk = selectedFile.slice(start, end);
@@ -263,7 +258,7 @@ export default function JobDetailPage({ params }) {
 
         if (!success) {
           toast.dismiss();
-          toast.error(`Upload failed at chunk ${i + 1}/${totalChunks}. Please try again.`);
+          toast.error(`Upload failed.`);
           setIsUploading(false);
           return;
         }
@@ -374,16 +369,6 @@ export default function JobDetailPage({ params }) {
                 
                 {selectedFile && (
                   <div className="mt-4">
-                    {isUploading && (
-                      <div className="mb-4">
-                        <div className="flex justify-between text-sm text-gray-700 mb-1">
-                          <span>Uploading chunk {currentChunk} of {totalChunks}</span>
-                          <span>{uploadProgress}%</span>
-                        </div>
-                        <ProgressBar progress={uploadProgress} />
-                      </div>
-                    )}
-                    
                     <div className="flex justify-end">
                       <button
                         onClick={handleUploadDataFile}
