@@ -20,6 +20,10 @@ export const API_ENDPOINTS = {
   JOB_DELETE: (id) => `/api/jobs/${id}`,
   JOB_UPLOAD_DATA: (id) => `/api/job/${id}/upload-data`,
   
+  // Group endpoints (FastAPI backend)
+  GROUP_CREATE: '/api/group',
+  GROUP_DETAIL: (id) => `/api/group/${id}`,
+  
   // Additional endpoints
   USERS: '/api/users',
   USER_PROFILE: '/api/users/profile',

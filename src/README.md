@@ -1,123 +1,73 @@
-🚀 Chunked File Upload Integration (100MB Streaming)
-🧩 Objective
-Implement large CSV file upload functionality in the frontend that streams the data to the backend in 100MB chunks.
+## 🌐 Backend API Integration
 
-✅ Target: Reliable chunked upload flow with backend coordination and post-upload job execution trigger.
-
-🌐 Backend API: Upload Endpoint
-POST /{job_id}/upload-data
-This endpoint:
-
-Authenticates the user.
-
-Validates and stores each data chunk sequentially.
-
-Triggers the job execution only after the last chunk is uploaded.
-
-📥 Request Parameters
-Sent via multipart/form-data:
-
+### ✅ Endpoint
+```http
+POST /api/group
+🧾 Request Payload (multipart/form-data)
 Field	Type	Description
-file	File	The file chunk
-chunk_index	Form (int)	Index of the current chunk (0-based)
-total_chunks	Form (int)	Total number of chunks to be sent
+group_name	string	Name of the job group
+num_of_jobs	integer	Number of jobs/tasks
+file	UploadFile	Python file (.py) to be processed
 
-✅ Success Responses
-Partial Upload:
+🛡️ Authentication
+Authenticated via cookie (get_current_user_from_cookie)
+
+If not authenticated, returns:
+
+http
+Copy
+Edit
+HTTP 401 Unauthorized
+📥 Response Schema: GroupRead
+On success, the response is:
 
 json
 Copy
 Edit
 {
-  "message": "Data chunk uploaded successfully",
-  "data_chunk_index": 2,
-  "job_id": 123
+  "group_id": 12,
+  "group_name": "Batch Parser",
+  "python_file_name": "parser.py",
+  "num_of_jobs": 25,
+  "created_at": "2025-06-24T14:35:22.123Z"
 }
-Final Chunk Upload:
+Use group_id to redirect the user to:
+
+bash
+Copy
+Edit
+/group/{group_id}
+🔄 Fetch Group Details
+✅ Endpoint
+http
+Copy
+Edit
+GET /api/group/{group_id}
+🔁 Description
+Fetches full details of a created group.
+
+Required after successful creation to display group info on /group/{group_id}.
+
+📥 Response Schema: GroupRead
+Same as above:
 
 json
 Copy
 Edit
 {
-  "message": "Data uploaded successfully and job started",
-  "data_chunk_index": 4,
-  "job_id": 123
+  "group_id": 12,
+  "group_name": "Batch Parser",
+  "python_file_name": "parser.py",
+  "num_of_jobs": 25,
+  "created_at": "2025-06-24T14:35:22.123Z"
 }
-📦 Frontend Integration
-🔧 Constants
-js
-Copy
-Edit
-const CHUNK_SIZE = 100 * 1024 * 1024; // 100MB global chunk size
-🧠 Upload Flow
-User selects a CSV file.
+🛡️ Authentication
+Requires cookie-based auth (get_current_user_from_cookie)
 
-File is split into 100MB chunks.
+Possible errors:
 
-Each chunk is sent with its chunkIndex and totalChunks.
+401 Unauthorized
 
-If all chunks are uploaded successfully, backend starts the job.
+404 Group not found
 
-🛠️ Upload Handlers
-js
-Copy
-Edit
-// Here are sample implmentation for motivation and intuation ( use the same technique) 
-but provide neccessary modifications to run on the existing codebase
- const uploadChunk = async (chunk, chunkIndex, totalChunks, jobId) => {
-    const formData = new FormData();
-    formData.append('file', chunk);
-    formData.append('chunkIndex', chunkIndex);
-    formData.append('totalChunks', totalChunks);
-
-    try {
-        const response = await fetch(`/api/job/${jobId}/upload-data`, {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log(`✅ Chunk ${chunkIndex} uploaded`, data);
-        return true;
-    } catch (error) {
-        console.error(`❌ Error uploading chunk ${chunkIndex}:`, error);
-        return false;
-    }
-};
-js
-Copy
-Edit
-// Main handler for initiating the upload
-const handleUpload = async () => {
-    if (!file || !jobId) {
-        alert('Select a file and ensure a job ID is available.');
-        return;
-    }
-
-    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    let uploadedChunks = 0;
-
-    for (let i = 0; i < totalChunks; i++) {
-        const start = i * CHUNK_SIZE;
-        const end = Math.min(file.size, start + CHUNK_SIZE);
-        const chunk = file.slice(start, end);
-
-        const success = await uploadChunk(chunk, i, totalChunks, jobId);
-
-        if (!success) {
-            alert(`Upload failed at chunk ${i}. Aborting.`);
-            return;
-        }
-
-        uploadedChunks++;
-        const progress = ((uploadedChunks / totalChunks) * 100).toFixed(2);
-        console.log(`📦 Upload progress: ${progress}%`);
-    }
-
-    alert('🎉 Upload completed and job has started.');
-};
+500 Internal Server Error
