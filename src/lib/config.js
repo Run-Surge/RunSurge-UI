@@ -23,6 +23,7 @@ export const API_ENDPOINTS = {
   // Group endpoints (FastAPI backend)
   GROUP_CREATE: '/api/group',
   GROUP_DETAIL: (id) => `/api/group/${id}`,
+  GROUP_UPLOAD_DATA: (id) => `/api/group/${id}/upload-data`,
   
   // Additional endpoints
   USERS: '/api/users',

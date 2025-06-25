@@ -48,6 +48,31 @@ export class GroupService {
       };
     }
   }
+
+  /**
+   * Upload task data file for a group
+   */
+  async uploadTaskData(groupId, taskIndex, dataFile, requiredRam) {
+    try {
+      // Create FormData for multipart/form-data request
+      const formData = new FormData();
+      formData.append('task_index', taskIndex);
+      formData.append('data_file', dataFile);
+      formData.append('required_ram', requiredRam);
+
+      const response = await api.uploadFile(API_ENDPOINTS.GROUP_UPLOAD_DATA(groupId), formData);
+      return {
+        success: true,
+        message: 'Task data uploaded successfully',
+        task_index: response.task_index,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to upload task data',
+      };
+    }
+  }
 }
 
 // Create singleton instance
