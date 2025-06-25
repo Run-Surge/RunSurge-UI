@@ -1,25 +1,61 @@
-🧠 Task Instruction for Agent: Upload Data Section on GroupDetailsPage
-Objective:
-Enhance the GroupDetailsPage to include a data upload section that dynamically renders multiple upload slots, one per required task.
+📦 Group Data Upload Implementation Guide
+📍 Objective
+Enhance the RunSurge-UI/src/app/group/[id] page to support chunked uploads of .zip data files — one per job inside a group. This behavior should mirror the existing implementation in RunSurge-UI/src/app/job/[id].
 
-✅ What You Need to Do:
-Locate:
-Modify or extend the GroupDetailsPage.
+📌 Task Overview
+📄 Each job under a group requires one .zip file upload.
 
-Render Upload Section in a Loop:
+🔁 The upload must be chunked using the same strategy as on the job/[id] page.
 
-Use the required_tasks value (numeric) as the loop count.
+📂 The upload UI and logic must be rendered per job within the group.
 
-For each task, display a form section with:
+✅ Requirements Summary
+1. 📄 Frontend Page: RunSurge-UI/src/app/group/[id]
+Use the jobs array from the group response to loop over jobs.
 
-data_file: file input (accept .csv only)
+For each job:
 
-required_ram: input field (e.g., number in GB or MB)
+Display a chunked .zip upload interface (similar to job/[id] page).
 
-UX Requirements:
+Ensure file upload happens via chunks using chunk_index and total_chunks.
 
-All upload sections should be shown on the same page.
+2. 📡 API Endpoint
+The backend chunked upload is already implemented at:
 
-Group each task’s inputs clearly (e.g., with a heading like Task 1, Task 2, etc.)
+python
+Copy
+Edit
+POST /{job_id}/upload-zip-file
+Accepted form-data:
 
-Each upload section should be independent (user can fill them out one by one).
+Field	Type	Description
+file	UploadFile	Zip chunk of the job data
+chunk_index	int	Index of this chunk (starts at 0)
+total_chunks	int	Total number of chunks
+required ram   big int 
+
+⚠️ Note: Validation and processing are handled differently based on the job type.
+
+🧾 Sample Response from Group API
+json
+Copy
+Edit
+{
+  "group_id": 5,
+  "group_name": "group2",
+  "num_of_jobs": 3,
+  "created_at": "2025-06-25T04:03:30.592432",
+  "python_file_name": "test",
+  "jobs": [
+    {
+      "group_id": 5,
+      "job_id": 20,
+      "job_name": "group2_job_1",
+      "status": "submitted",
+      "created_at": "2025-06-25T04:03:30.622120"
+    },
+    ...
+  ]
+}
+You must use this list of jobs to render an upload section for each job.
+display only 

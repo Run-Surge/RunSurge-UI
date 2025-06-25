@@ -73,6 +73,32 @@ export class GroupService {
       };
     }
   }
+
+  /**
+   * Upload a single chunk of a zip file for a job within a group
+   */
+  async uploadJobZipChunk(groupId, jobId, chunk, chunkIndex, totalChunks, requiredRam) {
+    try {
+      // Create FormData for multipart/form-data request
+      const formData = new FormData();
+      formData.append('file', chunk);
+      formData.append('chunk_index', chunkIndex);
+      formData.append('total_chunks', totalChunks);
+      formData.append('required_ram', requiredRam);
+
+      const response = await api.uploadFile(`/api/group/${groupId}/${jobId}/upload-zip-file`, formData);
+      return {
+        success: true,
+        message: 'Chunk uploaded successfully',
+        chunk_index: chunkIndex,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to upload chunk',
+      };
+    }
+  }
 }
 
 // Create singleton instance
