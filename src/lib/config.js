@@ -29,6 +29,7 @@ export const API_ENDPOINTS = {
   USERS: '/api/users',
   USER_PROFILE: '/api/users/profile',
   USER_JOBS: '/api/users/jobs',
+  USER_GROUPS: '/api/users/groups',
 };
 
 // Request timeout in milliseconds

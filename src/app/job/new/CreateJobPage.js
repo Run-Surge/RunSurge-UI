@@ -43,29 +43,13 @@ const SimpleFileInput = ({
   );
 };
 
-// Tab component
-const TabButton = ({ active, onClick, children }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`px-6 py-3 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
-      active
-        ? "text-primary-600 border-primary-600 bg-primary-50"
-        : "text-gray-500 border-gray-200 hover:text-gray-700 hover:border-gray-300"
-    }`}
-  >
-    {children}
-  </button>
-);
-
 const CreateJobPage = () => {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("simple");
   const [pythonScript, setPythonScript] = useState(null);
   const [jobName, setJobName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Real job creation - integrates with backend API
+  // Job creation - integrates with backend API
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -86,7 +70,7 @@ const CreateJobPage = () => {
       // Call backend API to create job with multipart/form-data
       const result = await jobsService.createJob(
         jobName.trim(),
-        activeTab, // job_type (simple or complex)
+        "simple", // job_type is always simple
         pythonScript // file
       );
 
@@ -122,24 +106,6 @@ const CreateJobPage = () => {
               </p>
             </div>
 
-            {/* Tabs */}
-            <div className="border-b border-gray-200">
-              <nav className="flex space-x-8 px-6">
-                <TabButton
-                  active={activeTab === "simple"}
-                  onClick={() => setActiveTab("simple")}
-                >
-                  Simple Job
-                </TabButton>
-                <TabButton
-                  active={activeTab === "complex"}
-                  onClick={() => setActiveTab("complex")}
-                >
-                  Complex Job
-                </TabButton>
-              </nav>
-            </div>
-
             {/* Form Content */}
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               {/* Job Name */}
@@ -167,27 +133,6 @@ const CreateJobPage = () => {
                 onFileSelect={setPythonScript}
                 required
               />
-
-              {/* Tab-specific content */}
-              {activeTab === "simple" && (
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium text-blue-900 mb-2">Simple Job</h4>
-                  <p className="text-sm text-blue-700">
-                    Upload a Python script that will be executed with default settings. 
-                    You can add data files after the job is created.
-                  </p>
-                </div>
-              )}
-
-              {activeTab === "complex" && (
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium text-purple-900 mb-2">Complex Job</h4>
-                  <p className="text-sm text-purple-700">
-                    Upload a Python script with advanced configuration options. 
-                    You can specify custom parameters and dependencies after the job is created.
-                  </p>
-                </div>
-              )}
 
               {/* Submit Button */}
               <div className="flex justify-end space-x-3">

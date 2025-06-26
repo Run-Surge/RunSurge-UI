@@ -11,6 +11,7 @@ export default function CreateGroupPage() {
   const [groupName, setGroupName] = useState("");
   const [numTasks, setNumTasks] = useState("");
   const [pythonFile, setPythonFile] = useState(null);
+  const [aggregatorFile, setAggregatorFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -22,6 +23,17 @@ export default function CreateGroupPage() {
     } else {
       setPythonFile(null);
       setError("Please upload a valid Python (.py) file");
+    }
+  };
+
+  const handleAggregatorFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file && file.name.endsWith('.py')) {
+      setAggregatorFile(file);
+      setError("");
+    } else {
+      setAggregatorFile(null);
+      setError("Please upload a valid Python (.py) file for the aggregator");
     }
   };
 
@@ -48,7 +60,7 @@ export default function CreateGroupPage() {
     
     try {
       // Call the API to create a new group
-      const result = await groupService.createGroup(groupName, parseInt(numTasks), pythonFile);
+      const result = await groupService.createGroup(groupName, parseInt(numTasks), pythonFile, aggregatorFile);
       
       if (result.success) {
         // Redirect to the group detail page
@@ -126,6 +138,25 @@ export default function CreateGroupPage() {
                       name="pythonFile"
                       accept=".py"
                       onChange={handleFileChange}
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Only .py files are accepted
+                  </p>
+                </div>
+                
+                <div>
+                  <label htmlFor="aggregatorFile" className="block text-sm font-medium text-gray-700">
+                    Choose Aggregator File
+                  </label>
+                  <div className="mt-1 flex items-center">
+                    <input
+                      type="file"
+                      id="aggregatorFile"
+                      name="aggregatorFile"
+                      accept=".py"
+                      onChange={handleAggregatorFileChange}
                       className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
                     />
                   </div>

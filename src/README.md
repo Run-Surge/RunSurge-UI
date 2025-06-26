@@ -1,61 +1,42 @@
-📦 Group Data Upload Implementation Guide
-📍 Objective
-Enhance the RunSurge-UI/src/app/group/[id] page to support chunked uploads of .zip data files — one per job inside a group. This behavior should mirror the existing implementation in RunSurge-UI/src/app/job/[id].
+modify the dashboard to include a button with view Groups
+this should redirect to a page to display all the user groups 
+similar to the UI for the dashboard Jobs 
+Group Name	Status	Created	Actions Number of Jobs
 
-📌 Task Overview
-📄 Each job under a group requires one .zip file upload.
+when View Details is clicked it should redirect to 
+group/[groupid]
 
-🔁 The upload must be chunked using the same strategy as on the job/[id] page.
+Here are the status 
+class GroupStatus(str, Enum):
+    pending = 'pending'
+    running = 'running'
+    completed = 'completed'
+    failed = 'failed'
 
-📂 The upload UI and logic must be rendered per job within the group.
 
-✅ Requirements Summary
-1. 📄 Frontend Page: RunSurge-UI/src/app/group/[id]
-Use the jobs array from the group response to loop over jobs.
+@router.get("/", response_model=List[GroupRead])
+async def get_groups(
+    session: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user_from_cookie)
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    try:
+        group_service = get_group_service(session)
+        groups = await group_service.get_groups_by_user_id(user_id=current_user["user_id"])
+        return groups
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-For each job:
 
-Display a chunked .zip upload interface (similar to job/[id] page).
+class GroupBase(BaseModel):
+    group_id: int
+    group_name: str
+    python_file_name: str
+    num_of_jobs: int
+    created_at: datetime
+    aggregator_file_name: str
+    status: GroupStatus
 
-Ensure file upload happens via chunks using chunk_index and total_chunks.
-
-2. 📡 API Endpoint
-The backend chunked upload is already implemented at:
-
-python
-Copy
-Edit
-POST /{job_id}/upload-zip-file
-Accepted form-data:
-
-Field	Type	Description
-file	UploadFile	Zip chunk of the job data
-chunk_index	int	Index of this chunk (starts at 0)
-total_chunks	int	Total number of chunks
-required ram   big int 
-
-⚠️ Note: Validation and processing are handled differently based on the job type.
-
-🧾 Sample Response from Group API
-json
-Copy
-Edit
-{
-  "group_id": 5,
-  "group_name": "group2",
-  "num_of_jobs": 3,
-  "created_at": "2025-06-25T04:03:30.592432",
-  "python_file_name": "test",
-  "jobs": [
-    {
-      "group_id": 5,
-      "job_id": 20,
-      "job_name": "group2_job_1",
-      "status": "submitted",
-      "created_at": "2025-06-25T04:03:30.622120"
-    },
-    ...
-  ]
-}
-You must use this list of jobs to render an upload section for each job.
-display only 
+class GroupRead(GroupBase):
+    jobs: Optional[List[ComplexJobRead]] = []

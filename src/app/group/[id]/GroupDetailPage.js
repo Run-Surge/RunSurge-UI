@@ -66,7 +66,7 @@ export default function GroupDetailPage() {
         
         if (result.success) {
           setGroup(result.group);
-          console.log("from manga", result.group);
+          console.log("Group data with jobs:", result.group);
           
           // Initialize requiredRam state for each job
           if (result.group.jobs && result.group.jobs.length > 0) {
@@ -355,21 +355,17 @@ export default function GroupDetailPage() {
                           >
                             <div className="flex items-center justify-between mb-4">
                               <h3 className="text-md font-medium text-gray-900">
-                                Job: {job.job_name}
+                                Job: {`${group.jobs.indexOf(job) + 1}`}
                               </h3>
                               <StatusBadge status={job.status} />
                             </div>
                             
-                            <div className="mb-4 grid grid-cols-1 gap-y-2 sm:grid-cols-2 sm:gap-x-4">
-                              <div>
-                                <dt className="text-sm font-medium text-gray-500">Job ID</dt>
-                                <dd className="mt-1 text-sm text-gray-900">{job.job_id}</dd>
+                            {job.input_file_name && job.input_file_name !== "No input file" && (
+                              <div className="mb-4">
+                                <dt className="text-sm font-medium text-gray-500">Data File</dt>
+                                <dd className="mt-1 text-sm text-gray-900">{job.input_file_name}</dd>
                               </div>
-                              <div>
-                                <dt className="text-sm font-medium text-gray-500">Created At</dt>
-                                <dd className="mt-1 text-sm text-gray-900">{formatDate(job.created_at)}</dd>
-                              </div>
-                            </div>
+                            )}
                             
                             {job.status === 'submitted' && (
                               <>
@@ -387,7 +383,7 @@ export default function GroupDetailPage() {
                                 
                                 <div className="mb-4">
                                   <label htmlFor={`required-ram-${job.job_id}`} className="block text-sm font-medium text-gray-700">
-                                    Required RAM (MB)
+                                    Required RAM (B)
                                   </label>
                                   <div className="mt-1">
                                     <input

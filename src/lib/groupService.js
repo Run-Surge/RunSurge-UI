@@ -8,13 +8,14 @@ export class GroupService {
   /**
    * Create a new group job with file upload (multipart/form-data)
    */
-  async createGroup(groupName, numOfJobs, pythonFile) {
+  async createGroup(groupName, numOfJobs, pythonFile, aggregatorFile) {
     try {
       // Create FormData for multipart/form-data request
       const formData = new FormData();
       formData.append('group_name', groupName);
       formData.append('num_of_jobs', numOfJobs);
-      formData.append('file', pythonFile);
+      formData.append('python_file', pythonFile);
+      formData.append('aggregator_file', aggregatorFile);
 
       const response = await api.uploadFile(API_ENDPOINTS.GROUP_CREATE, formData);
       return {
@@ -27,6 +28,24 @@ export class GroupService {
       return {
         success: false,
         message: error.message || 'Failed to create group',
+      };
+    }
+  }
+
+  /**
+   * Get all groups for the current user
+   */
+  async getUserGroups() {
+    try {
+      const response = await api.get(API_ENDPOINTS.USER_GROUPS);
+      return {
+        success: true,
+        groups: response,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch groups',
       };
     }
   }
