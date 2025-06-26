@@ -129,20 +129,24 @@ const FileUploadArea = ({ onFileSelect, selectedFile, acceptedFormats = ".csv" }
 const StatusBadge = ({ status }) => {
   const baseClasses = "px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full";
   const statusClasses = {
-    created: "bg-gray-100 text-gray-800",
-    pending: "bg-yellow-100 text-yellow-800",
+    submitted: "bg-gray-100 text-gray-800",
+    pending_schedule: "bg-yellow-100 text-yellow-800",
     running: "bg-blue-100 text-blue-800",
-    success: "bg-green-100 text-green-800",
-    complete: "bg-green-100 text-green-800",
+    completed: "bg-green-100 text-green-800",
     failed: "bg-red-100 text-red-800",
-    submitted: "bg-purple-100 text-purple-800",
   };
   
-  const normalizedStatus = status?.toLowerCase() || 'created';
+  const normalizedStatus = status?.toLowerCase() || 'submitted';
+  
+  // Format display text to be more readable
+  const getDisplayText = (status) => {
+    if (status === 'pending_schedule') return 'PENDING';
+    return status.toUpperCase();
+  };
   
   return (
-    <span className={`${baseClasses} ${statusClasses[normalizedStatus] || statusClasses.created}`}>
-      {normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1)}
+    <span className={`${baseClasses} ${statusClasses[normalizedStatus] || statusClasses.submitted}`}>
+      {getDisplayText(normalizedStatus)}
     </span>
   );
 };
@@ -285,6 +289,32 @@ export default function JobDetailPage({ params }) {
     }
   };
 
+  // Handle result download
+  const handleDownloadResult = () => {
+    if (!job) return;
+    
+    try {
+      // Get the download URL
+      const downloadUrl = jobsService.downloadJobResult(job.job_id);
+      
+      // Create a temporary link and click it to trigger the download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      // Set filename with .csv extension
+      link.download = `job_${job.job_id}_result.csv`;
+      // Set MIME type for CSV
+      link.type = 'text/csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success("CSV file download started!");
+    } catch (error) {
+      toast.error("Failed to download result. Please try again.");
+      console.error("Download error:", error);
+    }
+  };
+
   if (loading) {
     return (
       <ProtectedRoute>
@@ -418,15 +448,33 @@ export default function JobDetailPage({ params }) {
                   </div>
                 )}
                 
-                {job.status === "complete" && (
+                {job.status === "completed" && (
                   <div className="mt-4">
                     <p className="text-sm text-gray-700">Your job has completed successfully!</p>
+                    <button
+                      onClick={handleDownloadResult}
+                      className="mt-4 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center"
+                    >
+                      <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download Result (CSV)
+                    </button>
                   </div>
                 )}
                 
                 {job.status === "failed" && (
                   <div className="mt-4">
                     <p className="text-sm text-red-700">Your job failed to complete. Please check the logs or try again.</p>
+                  </div>
+                )}
+
+                {job.status === "pending_schedule" && (
+                  <div className="mt-4">
+                    <p className="text-sm text-yellow-700">Your job is pending scheduling. It will start running soon.</p>
+                    <div className="mt-2 w-full bg-gray-200 rounded-full h-2.5">
+                      <div className="bg-yellow-600 h-2.5 rounded-full animate-pulse w-1/4"></div>
+                    </div>
                   </div>
                 )}
               </div>

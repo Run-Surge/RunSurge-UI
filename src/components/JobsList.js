@@ -40,6 +40,12 @@ export default function JobsList() {
     await toggleJobStatus(id, action);
   };
 
+  // Format status for display
+  const formatStatus = (status) => {
+    if (status === 'pending_schedule') return 'PENDING';
+    return status.toUpperCase();
+  };
+
   if (loading && jobs.length === 0) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -74,7 +80,8 @@ export default function JobsList() {
           className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">All Status</option>
-          <option value="pending">Pending</option>
+          <option value="submitted">Submitted</option>
+          <option value="pending_schedule">Pending</option>
           <option value="running">Running</option>
           <option value="completed">Completed</option>
           <option value="failed">Failed</option>
@@ -121,9 +128,10 @@ export default function JobsList() {
                         job.status === 'completed' ? 'bg-green-100 text-green-800' :
                         job.status === 'running' ? 'bg-blue-100 text-blue-800' :
                         job.status === 'failed' ? 'bg-red-100 text-red-800' :
+                        job.status === 'pending_schedule' ? 'bg-yellow-100 text-yellow-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {job.status}
+                        {formatStatus(job.status)}
                       </span>
                     </div>
                     
@@ -158,7 +166,7 @@ export default function JobsList() {
 
                 <div className="flex gap-2 ml-4">
                   {/* Toggle Status Button */}
-                  {(job.status === 'pending' || job.status === 'running') && (
+                  {(job.status === 'pending_schedule' || job.status === 'running') && (
                     <button
                       onClick={() => handleToggleStatus(job.id, job.status)}
                       className={`px-3 py-1 rounded text-sm font-medium ${

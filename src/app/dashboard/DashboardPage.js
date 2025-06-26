@@ -10,18 +10,24 @@ import { useAuth } from "../context/AuthContext";
 const StatusBadge = ({ status }) => {
   const baseClasses = "px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full";
   const statusClasses = {
-    created: "bg-gray-100 text-gray-800",
-    pending: "bg-yellow-100 text-yellow-800",
+    submitted: "bg-gray-100 text-gray-800",
+    pending_schedule: "bg-yellow-100 text-yellow-800",
     running: "bg-blue-100 text-blue-800", 
-    complete: "bg-green-100 text-green-800",
+    completed: "bg-green-100 text-green-800",
     failed: "bg-red-100 text-red-800",
   };
   
-  const normalizedStatus = status?.toLowerCase() || 'created';
+  const normalizedStatus = status?.toLowerCase() || 'submitted';
+  
+  // Format display text to be more readable
+  const getDisplayText = (status) => {
+    if (status === 'pending_schedule') return 'PENDING';
+    return status.toUpperCase();
+  };
   
   return (
-    <span className={`${baseClasses} ${statusClasses[normalizedStatus] || statusClasses.created}`}>
-      {normalizedStatus.toUpperCase()}
+    <span className={`${baseClasses} ${statusClasses[normalizedStatus] || statusClasses.submitted}`}>
+      {getDisplayText(normalizedStatus)}
     </span>
   );
 };
@@ -92,8 +98,8 @@ export default function DashboardPage() {
 
   // Calculate stats
   const totalJobs = jobs.length;
-  const completedJobs = jobs.filter(job => job.status === 'complete').length;
-  const runningJobs = jobs.filter(job => job.status === 'running' || job.status === 'pending').length;
+  const completedJobs = jobs.filter(job => job.status === 'completed').length;
+  const runningJobs = jobs.filter(job => job.status === 'running' || job.status === 'pending_schedule').length;
 
   return (
     <ProtectedRoute>

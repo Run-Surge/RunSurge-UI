@@ -1,6 +1,9 @@
 import { API_BASE_URL, REQUEST_TIMEOUT } from './config';
 import Cookies from 'js-cookie';
 
+// Define a longer timeout for downloads
+const DOWNLOAD_TIMEOUT = 60000*2; // 120 seconds (2 minutes)
+
 /**
  * Custom fetch wrapper with authentication and error handling
  */
@@ -24,11 +27,11 @@ export class ApiService {
   /**
    * Create request with timeout
    */
-  createRequestWithTimeout(url, options) {
+  createRequestWithTimeout(url, options, customTimeout = this.timeout) {
     return Promise.race([
       fetch(url, options),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), this.timeout)
+        setTimeout(() => reject(new Error('Request timeout')), customTimeout)
       ),
     ]);
   }
@@ -63,7 +66,7 @@ export class ApiService {
   /**
    * Generic API request method
    */
-  async request(endpoint, options = {}) {
+  async request(endpoint, options = {}, customTimeout = this.timeout) {
     const url = `${this.baseURL}${endpoint}`;
     const config = {
       headers: this.getAuthHeaders(),
@@ -72,7 +75,7 @@ export class ApiService {
     };
 
     try {
-      const response = await this.createRequestWithTimeout(url, config);
+      const response = await this.createRequestWithTimeout(url, config, customTimeout);
       return await this.handleResponse(response);
     } catch (error) {
       console.error('API Request failed:', error);
@@ -89,6 +92,17 @@ export class ApiService {
     return this.request(url, {
       method: 'GET',
     });
+  }
+
+  /**
+   * GET request with longer timeout (for downloads)
+   */
+  async getWithLongerTimeout(endpoint, params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+    return this.request(url, {
+      method: 'GET',
+    }, DOWNLOAD_TIMEOUT);
   }
 
   /**

@@ -1,5 +1,5 @@
 import { api } from './api';
-import { API_ENDPOINTS } from './config';
+import { API_ENDPOINTS, API_BASE_URL } from './config';
 
 /**
  * Jobs service for handling job-related API calls
@@ -164,6 +164,18 @@ export class JobsService {
         message: error.message || 'Failed to fetch user jobs',
       };
     }
+  }
+
+  /**
+   * Download job result file
+   * This triggers a direct file download from the API for CSV format
+   */
+  downloadJobResult(jobId) {
+    // We return the full URL to be used in a direct download
+    // The download will use browser's native functionality with longer timeout
+    // The result is expected to be a CSV file
+    const resultUrl = `${API_BASE_URL}${API_ENDPOINTS.JOB_RESULT(jobId)}`;
+    return resultUrl;
   }
 
   /**
