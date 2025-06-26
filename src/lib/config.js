@@ -25,6 +25,7 @@ export const API_ENDPOINTS = {
   GROUP_CREATE: '/api/group',
   GROUP_DETAIL: (id) => `/api/group/${id}`,
   GROUP_UPLOAD_DATA: (id) => `/api/group/${id}/upload-data`,
+  GROUP_RESULT: (id) => `/api/group/${id}/result`,
   
   // Additional endpoints
   USERS: '/api/users',

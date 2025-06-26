@@ -1,5 +1,5 @@
 import { api } from './api';
-import { API_ENDPOINTS } from './config';
+import { API_ENDPOINTS, API_BASE_URL } from './config';
 
 /**
  * Group service for handling group-related API calls
@@ -117,6 +117,18 @@ export class GroupService {
         message: error.message || 'Failed to upload chunk',
       };
     }
+  }
+
+  /**
+   * Download group result file
+   * This triggers a direct file download from the API for ZIP format
+   */
+  downloadGroupResult(groupId) {
+    // We return the full URL to be used in a direct download
+    // The download will use browser's native functionality with longer timeout
+    // The result is expected to be a ZIP file
+    const resultUrl = `${API_BASE_URL}${API_ENDPOINTS.GROUP_RESULT(groupId)}`;
+    return resultUrl;
   }
 }
 

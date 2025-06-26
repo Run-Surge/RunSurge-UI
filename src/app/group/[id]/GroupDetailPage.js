@@ -26,20 +26,24 @@ const ProgressBar = ({ progress }) => {
 const StatusBadge = ({ status }) => {
   const baseClasses = "px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full";
   const statusClasses = {
-    created: "bg-gray-100 text-gray-800",
-    pending: "bg-yellow-100 text-yellow-800",
+    submitted: "bg-gray-100 text-gray-800",
+    pending_schedule: "bg-yellow-100 text-yellow-800",
     running: "bg-blue-100 text-blue-800",
-    success: "bg-green-100 text-green-800",
-    complete: "bg-green-100 text-green-800",
+    completed: "bg-green-100 text-green-800",
     failed: "bg-red-100 text-red-800",
-    submitted: "bg-purple-100 text-purple-800",
   };
   
-  const normalizedStatus = status?.toLowerCase() || 'created';
+  const normalizedStatus = status?.toLowerCase() || 'submitted';
+  
+  // Format display text to be more readable
+  const getDisplayText = (status) => {
+    if (status === 'pending_schedule') return 'PENDING';
+    return status.toUpperCase();
+  };
   
   return (
-    <span className={`${baseClasses} ${statusClasses[normalizedStatus] || statusClasses.created}`}>
-      {normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1)}
+    <span className={`${baseClasses} ${statusClasses[normalizedStatus] || statusClasses.submitted}`}>
+      {getDisplayText(normalizedStatus)}
     </span>
   );
 };
@@ -275,6 +279,33 @@ export default function GroupDetailPage() {
     }
   };
 
+  // Handle result download
+  const handleDownloadResult = () => {
+    if (!group) return;
+    
+    try {
+      // Get the download URL
+      const downloadUrl = groupService.downloadGroupResult(group.group_id);
+      
+      // Create a temporary link and click it to trigger the download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      // Set filename with .zip extension
+      const filename = group.output_data_file?.file_name || `group_${group.group_id}_result`;
+      link.download = `${filename}.zip`;
+      // Set MIME type for ZIP
+      link.type = 'application/zip';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success("ZIP file download started!");
+    } catch (error) {
+      toast.error("Failed to download result. Please try again.");
+      console.error("Download error:", error);
+    }
+  };
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 py-8">
@@ -339,7 +370,29 @@ export default function GroupDetailPage() {
                         <dt className="text-sm font-medium text-gray-500">Created At</dt>
                         <dd className="mt-1 text-sm text-gray-900">{formatDate(group.created_at)}</dd>
                       </div>
+
+                      <div className="sm:col-span-1">
+                        <dt className="text-sm font-medium text-gray-500">Status</dt>
+                        <dd className="mt-1 text-sm">
+                          <StatusBadge status={group.status} />
+                        </dd>
+                      </div>
                     </dl>
+
+                    {/* Download Result Button for completed groups */}
+                    {group.status === 'completed' && (
+                      <div className="mt-6 flex">
+                        <button
+                          onClick={handleDownloadResult}
+                          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center"
+                        >
+                          <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Download Result (ZIP)
+                        </button>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Job Data Upload Section */}

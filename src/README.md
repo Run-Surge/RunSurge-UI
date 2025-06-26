@@ -1,42 +1,28 @@
-modify the dashboard to include a button with view Groups
-this should redirect to a page to display all the user groups 
-similar to the UI for the dashboard Jobs 
-Group Name	Status	Created	Actions Number of Jobs
+I want to implement result upload on group/[groupid] page 
+if the status is completed, then the UI should render a button called Download the result, also display the status of the Group
+no need to handle chunking on this endpoint
+but make its time out bigger
 
-when View Details is clicked it should redirect to 
-group/[groupid]
+Here is the endpoint 
+The endpoint url is api/group/{groupid}/result
 
-Here are the status 
-class GroupStatus(str, Enum):
-    pending = 'pending'
-    running = 'running'
-    completed = 'completed'
-    failed = 'failed'
-
-
-@router.get("/", response_model=List[GroupRead])
-async def get_groups(
+@router.get("/{group_id}/result")
+async def get_group_result(
+    group_id: int,
     session: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user_from_cookie)
 ):
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
-    try:
-        group_service = get_group_service(session)
-        groups = await group_service.get_groups_by_user_id(user_id=current_user["user_id"])
-        return groups
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-class GroupBase(BaseModel):
-    group_id: int
-    group_name: str
-    python_file_name: str
-    num_of_jobs: int
-    created_at: datetime
-    aggregator_file_name: str
-    status: GroupStatus
-
-class GroupRead(GroupBase):
-    jobs: Optional[List[ComplexJobRead]] = []
+    group_service = get_group_service(session)
+    group = await group_service.get_group_by_id(group_id=group_id)
+    if group.user_id != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    if group.status != GroupStatus.completed:
+        raise HTTPException(status_code=400, detail="Group is not completed yet")
+    file_path = os.path.join(GROUPS_DIRECTORY_PATH, str(group_id), f"{group.output_data_file.file_name}.zip")
+    return FileResponse(
+        path=file_path,
+        filename=f"{group.output_data_file.file_name}.zip",
+        media_type="application/zip"
+    )

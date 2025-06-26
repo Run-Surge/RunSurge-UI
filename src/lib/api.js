@@ -2,7 +2,7 @@ import { API_BASE_URL, REQUEST_TIMEOUT } from './config';
 import Cookies from 'js-cookie';
 
 // Define a longer timeout for downloads
-const DOWNLOAD_TIMEOUT = 60000*2; // 120 seconds (2 minutes)
+const DOWNLOAD_TIMEOUT = 60000; // 60 seconds
 
 /**
  * Custom fetch wrapper with authentication and error handling
