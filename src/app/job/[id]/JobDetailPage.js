@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import ProtectedRoute from "../../../components/ProtectedRoute";
 import toast from "react-hot-toast";
 import { jobsService } from "../../../lib/jobsService";
@@ -178,7 +179,7 @@ export default function JobDetailPage({ params }) {
     const fetchJobDetails = async () => {
       try {
         const result = await jobsService.getJob(params.id);
-        
+        console.log(result);  
         if (result.success) {
           setJob(result.job);
         } else {
@@ -451,9 +452,34 @@ export default function JobDetailPage({ params }) {
                 {job.status === "completed" && (
                   <div className="mt-4">
                     <p className="text-sm text-gray-700">Your job has completed successfully!</p>
+                    
+                    {/* Payment Information for completed jobs */}
+                    <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-100">
+                      <div className="flex items-center mb-2">
+                        <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h4 className="font-medium text-green-800">Payment Details</h4>
+                      </div>
+                      <p className="text-sm text-gray-700 mb-2">
+                        Total payment amount: <span className="font-bold text-green-700">${job.payment_amount?.toFixed(2) || "0.00"}</span>
+                      </p>
+                      <div className="mt-3 flex space-x-3">
+                        <Link
+                          href={`/job/${job.job_id}/payment`}
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        >
+                          <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          </svg>
+                          View Payment Details
+                        </Link>
+                      </div>
+                    </div>
+                    
                     <button
                       onClick={handleDownloadResult}
-                      className="mt-4 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center"
+                      className="mt-4 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center"
                     >
                       <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />

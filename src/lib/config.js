@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
   JOB_DELETE: (id) => `/api/jobs/${id}`,
   JOB_UPLOAD_DATA: (id) => `/api/job/${id}/upload-data`,
   JOB_RESULT: (id) => `/api/job/${id}/result`,
+  JOB_PAYMENT: (id) => `/api/job/${id}/payment`,
   
   // Group endpoints (FastAPI backend)
   GROUP_CREATE: '/api/group',
@@ -32,6 +33,7 @@ export const API_ENDPOINTS = {
   USER_PROFILE: '/api/users/profile',
   USER_JOBS: '/api/users/jobs',
   USER_GROUPS: '/api/users/groups',
+  USER_NODES: '/api/users/nodes',
 };
 
 // Request timeout in milliseconds

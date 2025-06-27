@@ -196,6 +196,43 @@ export class JobsService {
       };
     }
   }
+
+  /**
+   * Get job payment details including task usage information
+   */
+  async getJobPayment(jobId) {
+    try {
+      const response = await api.get(API_ENDPOINTS.JOB_PAYMENT(jobId));
+      return {
+        success: true,
+        payment: response,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch payment details',
+      };
+    }
+  }
+
+  /**
+   * Process payment for a job
+   */
+  async processPayment(jobId) {
+    try {
+      const response = await api.post(API_ENDPOINTS.JOB_PAYMENT(jobId));
+      return {
+        success: true,
+        message: response.message || 'Payment processed successfully',
+        data: response
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to process payment',
+      };
+    }
+  }
 }
 
 // Create singleton instance
