@@ -1,5 +1,5 @@
 // API Configuration - Point to FastAPI backend
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://10.10.10.234:8000';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://10.10.10.249:8000';
 
 // API Endpoints for FastAPI backend
 export const API_ENDPOINTS = {
@@ -31,6 +31,9 @@ export const API_ENDPOINTS = {
   
   // Node endpoints (FastAPI backend)
   NODE_DETAIL: (id) => `/api/node/${id}`,
+  
+  // Statistics endpoint
+  STATISTICS: '/api/statistics',
   
   // Additional endpoints
   USERS: '/api/users',

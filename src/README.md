@@ -1,58 +1,58 @@
-🧠 Task: Add Group Payment Button (Only If Group Status Is Completed)
-📍 Page to Modify
-bash
+🏠 Add Global Statistics to Home Page
+🧠 Task Summary
+Update the Home Page UI to display global statistics about the platform:
+
+Total number of active contributions (nodes).
+
+Total lifetime earnings in the system.
+
+These statistics will be fetched from a provided backend API endpoint.
+
+📍 Location
+Modify the following page:
+
+arduino
 Copy
 Edit
-app/group/[groupid]/GroupDetailsPage.js
-✅ Objective
-Modify the Group Details Page to:
+/app/page.tsx  (or similar home page component)
+📡 API Integration
+Fetch the data from the following backend endpoint:
 
-Render a "Pay" button only if:
-
-group.status === "completed" AND
-
-group.payment_status !== "completed"
-
-Send a POST request to initiate group payment via the following FastAPI endpoint:
-
-http
+Endpoint
+pgsql
 Copy
 Edit
-POST /{group_id}/payment
-Show the payment_amount for each job inside the group (from jobs[]). only if the job status is completed
-
-📦 API Response Structure
+GET /api/statistics
+Response Format
+json
+Copy
+Edit
+{
+  "nodes": <number>,     // total number of active nodes/contributions
+  "earnings": <float>    // total lifetime earnings
+}
+Backend Endpoint Source (for reference only)
 python
 Copy
 Edit
-class GroupDetailRead(GroupBase):
-    jobs: List[ComplexJobDetailRead]
+@router.get("/")
+async def get_statistics(
+    session: AsyncSession = Depends(get_db),
+):
+    node_service = get_node_service(session)
+    nodes = await node_service.get_all_nodes()
+    earnings_service = get_earnings_service(session)
+    earnings = await earnings_service.get_all_earnings_amount()
+    return {"nodes": len(nodes), "earnings": earnings}
+🎨 UI Requirements
+Add a new section to the top or a visible area of the Home Page that displays:
 
-class ComplexJobDetailRead(ComplexJobRead):
-    input_file_name: str
-    payment_amount: Optional[float] = None
+✅ Total Active Contributions: Display value from nodes.
 
-class GroupBase(BaseModel):
-    group_id: int
-    group_name: str
-    python_file_name: str
-    num_of_jobs: int
-    created_at: datetime
-    aggregator_file_name: str
-    status: GroupStatus  # Enum: "pending", "running", "completed"
-    payment_status: Optional[PaymentStatus] = PaymentStatus.pending
-    payment_amount: Optional[float] = None
-🔘 Pay Button Behavior
-Only show the "Pay" button when:
+💰 Lifetime Earnings: Display value from earnings, formatted with appropriate currency styling (e.g., $12,345.67).
 
-ts
-Copy
-Edit
-group.status === "completed" && group.payment_status !== "completed"
-On button click, send POST request to:
+Design Tips:
 
-bash
-Copy
-Edit
-POST /api/group/{group_id}/payment
-Handle success and error messages appropriately (e.g., toast, )
+Use cards or summary boxes with icons if available.
+
+Ensure responsiveness and proper alignment with existing layout.
