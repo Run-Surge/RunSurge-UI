@@ -22,6 +22,24 @@ export class NodeService {
       };
     }
   }
+
+  /**
+   * Get details for a specific node by ID
+   */
+  async getNodeDetails(nodeId) {
+    try {
+      const response = await api.get(API_ENDPOINTS.NODE_DETAIL(nodeId));
+      return {
+        success: true,
+        nodeDetails: response
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch node details',
+      };
+    }
+  }
 }
 
 // Create singleton instance

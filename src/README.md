@@ -1,94 +1,69 @@
-🧠 Task: Implement "View My Nodes" Dashboard Feature
+🧠 Task: Implement nodes/[node_id] Detail Page
 🎯 Goal
-Enhance the user dashboard by adding a new section where users can view their registered compute nodes. Each node will display essential details, and the page will also provide a high-level summary of node earnings and statistics.
+Create a detail page for each user node under the route:
+/nodes/[node_id]
 
-🔧 Modifications to Make
-✅ 1. Add Button to Dashboard
-Location: User Dashboard UI
+This page will display the node’s metadata and a list of its completed tasks. The layout and design must match the visual style of the dashboard and the node listing page (/nodes).
 
-Button Label: View My Nodes
+🔗 Backend API
+Endpoint: GET /api/node/{node_id}
 
-Behavior: Redirect to /nodes route/page
+Add to: config.js as NODE_DETAIL_API
 
-✅ 2. Create /nodes Page
-🔗 Data Source
-Use the following backend endpoint to fetch user node data:
+Response Type: NodeDetailRead
 
-http
-Copy
-Edit
-GET /user/api/nodes
-This endpoint returns a response shaped like the following model:
-
+✅ Expected Response Schema
 ts
 Copy
 Edit
-interface DashboardRead {
-  total_earnings: number;
-  paid_earnings: number;
-  pending_earnings: number;
-  number_of_nodes: number;
-  nodes: NodeRead[];
-}
-
-interface NodeRead {
+interface NodeDetailRead {
   node_id: string;
-  created_at: string;
   is_alive: boolean;
   total_node_earnings: number;
   num_of_completed_tasks: number;
+  tasks: TaskNodeDetailRead[];
 }
-🎨 UI Requirements
-Match the visual style of the existing dashboard.
 
-Use cards or a clean table layout for each node.
+interface TaskNodeDetailRead {
+  task_id: number;
+  started_at: string;
+  completed_at: string;
+  total_active_time: number;
+  avg_memory_bytes: number;
+  status: string;
+  earning_amount: number | null;
+  earning_status: string | null;
+}
+🖥️ UI Requirements
+🔹 Header Section
+Display the following node-level details in a styled summary card or section:
 
-Display important fields for each node:
+Node ID
 
-node_id
-
-created_at
-
-is_alive (use a green/red badge or status icon)
-
-total_node_earnings
-
-num_of_completed_tasks
-
-At the top of the page, show a summary section:
-
-Total Number of Nodes
+is_alive (use green ✅ or red ❌ badge)
 
 Total Earnings
 
-Paid Earnings
+Number of Completed Tasks
 
-Pending Earnings
+🔹 Tasks List Section
+Show each completed task in a visually consistent card or table layout (similar to other dashboard sections). For each task, display:
 
-Each node card or row must include a:
+Task ID
 
-"View Details" button → placeholder for now; just a button without behavior.
+Started At
 
-🧪 Example UI Structure (Suggested)
-plaintext
-Copy
-Edit
-╔════════════════════════════════════╗
-║        📊 My Node Overview         ║
-╠════════════════════════════════════╣
-║  Total Nodes: 4                   ║
-║  Total Earnings: $250.00         ║
-║  Paid: $180.00 | Pending: $70.00 ║
-╚════════════════════════════════════╝
+Completed At
 
-[ Node ID: abc123 ]
-  Created: 2024-10-11
-  Status: ✅ Alive
-  Completed Tasks: 87
-  Earnings: $75.00
-  [ View Details ]
+Total Active Time (in seconds (float))
 
-[ Node ID: def456 ]
-  ...
-🚫 Notes
-Do not implement the logic for the "View Details" button yet. Just render it.
+Average Memory (Bytes) (format it in MB)
+
+Earning Amount (or "N/A")
+
+Earning Status (e.g., “Paid”, “Pending”)
+
+🧭 Page Routing
+Path: /nodes/[node_id]
+
+This page is accessed when the user clicks “View Details” from the /nodes page.

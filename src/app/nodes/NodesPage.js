@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import ProtectedRoute from "../../components/ProtectedRoute";
 import { nodeService } from "../../lib/nodeService";
 import toast from "react-hot-toast";
@@ -31,7 +32,7 @@ export default function NodesPage() {
         setError(null);
         
         const result = await nodeService.getUserNodes();
-        
+        console.log(result);
         if (result.success) {
           setDashboardData(result);
         } else {
@@ -245,11 +246,12 @@ export default function NodesPage() {
                                     {formatCurrency(node.total_node_earnings)}
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button
+                                    <Link
+                                      href={`/nodes/${node.node_id}`}
                                       className="text-indigo-600 hover:text-indigo-900"
                                     >
                                       View Details
-                                    </button>
+                                    </Link>
                                   </td>
                                 </tr>
                               ))}
