@@ -157,6 +157,56 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* Footer Section */}
+      <footer className="bg-white border-t border-gray-200 mt-16">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="mb-6 md:mb-0">
+              <div className="flex items-center">
+                <svg
+                  className="h-8 w-8 text-primary-600 mr-2"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 2l9 7-9 7-9-7 9-7zM12 22l9-7v-5l-9 7-9-7v5l9 7z"
+                  />
+                </svg>
+                <span className="text-xl font-bold text-gray-900">RunSurge</span>
+              </div>
+              <p className="text-gray-600 mt-2">
+                Connecting computing resources with opportunities
+              </p>
+            </div>
+            
+            <div className="flex flex-col items-center md:items-end">
+              <div className="flex space-x-4 mb-4">
+                <Link
+                  href="/about"
+                  className="text-gray-600 hover:text-primary-600 transition-colors"
+                >
+                  About Us
+                </Link>
+                <Link
+                  href="/docs"
+                  className="text-gray-600 hover:text-primary-600 transition-colors"
+                >
+                  Documentation
+                </Link>
+              </div>
+              <p className="text-gray-500 text-sm">
+                &copy; {new Date().getFullYear()} RunSurge. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -66,7 +66,11 @@ export default function CreateGroupPage() {
         // Redirect to the group detail page
         router.push(`/group/${result.group_id}`);
       } else {
-        setError(result.message || "Failed to create group. Please try again.");
+        if (result.message && result.message.includes("Vulnerable script detected")) {
+          setError("Vulnerable script detected");
+        } else {
+          setError(result.message || "Failed to create group. Please try again.");
+        }
         setIsSubmitting(false);
       }
     } catch (err) {

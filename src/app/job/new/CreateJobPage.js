@@ -82,7 +82,11 @@ const CreateJobPage = () => {
         // Redirect to job detail page using job_id from response
         router.push(`/job/${result.job_id}`);
       } else {
-        toast.error(result.message || "Failed to create job");
+        if (result.message && result.message.includes("Vulnerable script detected")) {
+          toast.error("Vulnerable script detected");
+        } else {
+          toast.error(result.message || "Failed to create job");
+        }
         setIsSubmitting(false);
       }
     } catch (error) {

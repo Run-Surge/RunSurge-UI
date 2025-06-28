@@ -42,6 +42,30 @@ const ClientLayout = ({ children }) => {
                   RunSurge
                 </span>
               </Link>
+              
+              {/* Main Navigation Links */}
+              <div className="hidden md:flex ml-10 space-x-4">
+                <Link
+                  href="/about"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    pathname === "/about"
+                      ? "bg-primary-100 text-primary-700"
+                      : "text-gray-700 hover:text-primary-600 hover:bg-gray-100"
+                  }`}
+                >
+                  About
+                </Link>
+                <Link
+                  href="/docs"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    pathname === "/docs"
+                      ? "bg-primary-100 text-primary-700"
+                      : "text-gray-700 hover:text-primary-600 hover:bg-gray-100"
+                  }`}
+                >
+                  Documentation
+                </Link>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               {isAuthenticated && (
