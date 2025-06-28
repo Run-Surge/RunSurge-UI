@@ -7,7 +7,7 @@ import ProtectedRoute from "../../../components/ProtectedRoute";
 import toast from "react-hot-toast";
 import { jobsService } from "../../../lib/jobsService";
 
-const CHUNK_SIZE = 100 * 1024 * 1024; // 100MB
+const CHUNK_SIZE = 20 * 1024 * 1024; // 100MB
 
 // File upload component
 const FileUploadArea = ({ onFileSelect, selectedFile, acceptedFormats = ".csv" }) => {
@@ -173,29 +173,28 @@ export default function JobDetailPage({ params }) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentChunk, setCurrentChunk] = useState(0);
   const [totalChunks, setTotalChunks] = useState(0);
+  const fetchJobDetails = async () => {
+    try {
+      const result = await jobsService.getJob(params.id);
+      console.log(result);  
+      if (result.success) {
+        setJob(result.job);
+      } else {
+        toast.error(result.message || "Failed to load job");
+        router.push("/dashboard");
+      }
+    } catch (error) {
+      toast.error("Failed to load job");
+      router.push("/dashboard");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Fetch job details from API
   useEffect(() => {
-    const fetchJobDetails = async () => {
-      try {
-        const result = await jobsService.getJob(params.id);
-        console.log(result);  
-        if (result.success) {
-          setJob(result.job);
-        } else {
-          toast.error(result.message || "Failed to load job");
-          router.push("/dashboard");
-        }
-      } catch (error) {
-        toast.error("Failed to load job");
-        router.push("/dashboard");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchJobDetails();
-  }, [params.id, router]);
+  }, [params.id, router, fetchJobDetails]);
 
   // Handle file selection
   const handleFileSelect = (file) => {
@@ -279,7 +278,8 @@ export default function JobDetailPage({ params }) {
       setUploadProgress(0);
       setCurrentChunk(0);
       setTotalChunks(0);
-      router.push("/dashboard");
+      // Fetch updated job data without full page refresh
+      fetchJobDetails(job.job_id);
 
 
     } catch (error) {
