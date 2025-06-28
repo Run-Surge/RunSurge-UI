@@ -120,6 +120,25 @@ export class GroupService {
   }
 
   /**
+   * Process payment for a completed group
+   */
+  async processGroupPayment(groupId) {
+    try {
+      const response = await api.post(API_ENDPOINTS.GROUP_PAYMENT(groupId));
+      return {
+        success: true,
+        message: 'Payment processed successfully',
+        payment: response,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || 'Failed to process payment',
+      };
+    }
+  }
+
+  /**
    * Download group result file
    * This triggers a direct file download from the API for ZIP format
    */

@@ -54,6 +54,7 @@ export default function GroupDetailPage() {
   const [group, setGroup] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [processingPayment, setProcessingPayment] = useState(false);
   
   // Job upload state
   const [jobUploads, setJobUploads] = useState({});
@@ -279,6 +280,34 @@ export default function GroupDetailPage() {
     }
   };
 
+  // Handle payment for completed group
+  const handlePayment = async () => {
+    if (!group || group.status !== 'completed' || group.payment_status === 'completed') {
+      return;
+    }
+    
+    try {
+      setProcessingPayment(true);
+      const result = await groupService.processGroupPayment(group.group_id);
+      
+      if (result.success) {
+        toast.success('Payment processed successfully');
+        // Refresh group details to update payment status
+        const updatedGroup = await groupService.getGroup(id);
+        if (updatedGroup.success) {
+          setGroup(updatedGroup.group);
+        }
+      } else {
+        toast.error(result.message || 'Payment processing failed');
+      }
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      toast.error('An error occurred while processing payment');
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
   // Handle result download
   const handleDownloadResult = () => {
     if (!group) return;
@@ -377,11 +406,27 @@ export default function GroupDetailPage() {
                           <StatusBadge status={group.status} />
                         </dd>
                       </div>
+
+                      {group.payment_status && (
+                        <div className="sm:col-span-1">
+                          <dt className="text-sm font-medium text-gray-500">Payment Status</dt>
+                          <dd className="mt-1 text-sm">
+                            <StatusBadge status={group.payment_status} />
+                          </dd>
+                        </div>
+                      )}
+
+                      {group.payment_amount !== undefined && group.payment_amount !== null && (
+                        <div className="sm:col-span-1">
+                          <dt className="text-sm font-medium text-gray-500">Total Payment Amount</dt>
+                          <dd className="mt-1 text-sm text-gray-900">${group.payment_amount?.toFixed(2)}</dd>
+                        </div>
+                      )}
                     </dl>
 
-                    {/* Download Result Button for completed groups */}
-                    {group.status === 'completed' && (
-                      <div className="mt-6 flex">
+                    <div className="mt-6 flex space-x-4">
+                      {/* Download Result Button for completed groups */}
+                      {group.status === 'completed' && (
                         <button
                           onClick={handleDownloadResult}
                           className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center"
@@ -391,8 +436,32 @@ export default function GroupDetailPage() {
                           </svg>
                           Download Result (ZIP)
                         </button>
-                      </div>
-                    )}
+                      )}
+
+                      {/* Pay Button for completed groups with pending payment */}
+                      {group.status === 'completed' && group.payment_status !== 'completed' && (
+                        <button
+                          onClick={handlePayment}
+                          disabled={processingPayment}
+                          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center disabled:opacity-50"
+                        >
+                          {processingPayment ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                              </svg>
+                              Pay
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                    
                   </div>
                   
                   {/* Job Data Upload Section */}
@@ -417,6 +486,13 @@ export default function GroupDetailPage() {
                               <div className="mb-4">
                                 <dt className="text-sm font-medium text-gray-500">Data File</dt>
                                 <dd className="mt-1 text-sm text-gray-900">{job.input_file_name}</dd>
+                              </div>
+                            )}
+
+                            {job.status === 'completed' && job.payment_amount !== undefined && job.payment_amount !== null && (
+                              <div className="mb-4">
+                                <dt className="text-sm font-medium text-gray-500">Payment Amount</dt>
+                                <dd className="mt-1 text-sm text-gray-900">${job.payment_amount?.toFixed(2)}</dd>
                               </div>
                             )}
                             
