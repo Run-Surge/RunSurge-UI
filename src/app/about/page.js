@@ -25,14 +25,14 @@ export default function AboutPage() {
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-8 border border-white/20">
               <Sparkles className="w-4 h-4" />
-              <span className="text-sm font-medium">Decentralized Computing Platform</span>
+              <span className="text-sm font-medium">Hybrid Computing Platform</span>
             </div>
             <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
               About RunSurge
             </h1>
             <p className="text-xl md:text-2xl opacity-90 leading-relaxed max-w-3xl mx-auto">
               Bridging the gap between computational resources and opportunities through 
-              innovative decentralized computing solutions
+              innovative hybrid computing solutions
             </p>
           </div>
         </div>
@@ -52,7 +52,7 @@ export default function AboutPage() {
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div>
                 <p className="text-slate-700 text-lg leading-relaxed mb-6">
-                  RunSurge is building the future of decentralized computing. We're on a mission to 
+                  RunSurge is building the future of hybrid computing. We're on a mission to 
                   democratize access to computational resources while creating opportunities for 
                   anyone with spare computing power to participate in our ecosystem.
                 </p>
@@ -93,7 +93,7 @@ export default function AboutPage() {
               <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4">Platform Capabilities</h2>
               <p className="text-xl text-slate-600 max-w-3xl mx-auto">
                 RunSurge delivers enterprise-grade performance, security, and scalability through 
-                innovative decentralized computing architecture
+                innovative hybrid computing architecture
               </p>
             </div>
             
